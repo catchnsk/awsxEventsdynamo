@@ -1,0 +1,14 @@
+spring:
+  application:
+    name: reference-producer-app
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+producer:
+  domain: demo.producer
+  event-name: CustomerUpdated
+  schema-version: v1
+  endpoint: http://localhost:8080
+  token: demo-token
