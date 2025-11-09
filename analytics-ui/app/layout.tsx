@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import { ReactNode } from 'react';
 import Link from 'next/link';
 import { Providers } from '@/components/Providers';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 const navItems = [
   { href: '/', label: 'Overview' },
@@ -44,6 +45,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             <div className="flex items-center gap-3 text-sm">
               <span>Range: Last 24h</span>
               <button className="rounded border px-3 py-1 text-sm">Switch</button>
+              <ThemeToggle />
             </div>
           </header>
           <div className="p-4 space-y-6">
