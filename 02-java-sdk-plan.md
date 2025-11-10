@@ -1,7 +1,7 @@
-# Plan: Webhook Java SDK (Java 17 & 21)
+# Plan: Webhook Java SDK (Java 21)
 
 ## 0. Goals
-Provide an ergonomic library for producers to publish events to the platform with validation, auth, retries, and telemetry. Supports Java **17** and **21**.
+Provide an ergonomic library for producers to publish events to the platform with validation, auth, retries, and telemetry. Targets Java **21** (current LTS).
 
 ## 1. Deliverables
 - `webhooks-sdk-core`: validation, signing, idempotency, retry helpers.
@@ -51,7 +51,7 @@ client.publish(Event.of("producer.domain", "CustomerUpdated", "v1")
 - Correlation id propagation.
 
 ## 8. Packaging & Build
-- Java 17 baseline, CI matrix for 17 & 21.
+- Java 21 baseline (still test earlier LTS on demand).
 - Gradle Kotlin DSL (or Maven) with reproducible builds, GHA workflow.
 - `spotbugs`, `checkstyle`, `errorprone`; Javadoc + unit/integration tests.
 - Example app in `/examples/reference-app`.

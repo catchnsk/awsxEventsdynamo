@@ -1,0 +1,29 @@
+spring:
+  application:
+    name: listener-service
+
+listener:
+  source:
+    type: amq # amq or kafka
+    amq:
+      broker-url: ssl://amq.company.com:61616
+      queue: customer.updates
+    kafka:
+      bootstrap-servers: broker1:9092
+      group-id: listener-service
+      topics:
+        - customer_source_topic
+  aws:
+    region: us-east-1
+    dynamo-db:
+      table: event_schema
+      schema-cache-ttl: 15m
+  output:
+    msk:
+      bootstrap-servers: b-1.msk:9098
+      topic-prefix: wh.ingress
+      iam-auth-enabled: true
+
+logging:
+  level:
+    com.webhooks.listener: INFO

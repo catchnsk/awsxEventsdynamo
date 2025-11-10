@@ -18,7 +18,7 @@ Expose REST endpoints for producers (or SDK) to submit events. Validate against 
 5. Record idempotency key (optional) and respond 202.
 
 ## 3. Tech Stack
-- Spring Boot 3.x (Java 17/21), WebFlux.
+- Spring Boot 3.x (Java 21), WebFlux.
 - AWS SDK v2 (DynamoDB, MSK IAM).
 - JSON Schema validator; MapStruct for transforms.
 - IRSA for Kafka and DynamoDB permissions.

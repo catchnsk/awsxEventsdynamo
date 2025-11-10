@@ -9,7 +9,7 @@ This Maven multi-module build implements the SDK described in `02-java-sdk-plan.
 - `examples/reference-app`: minimal Spring-style producer using the SDK.
 
 ## Requirements
-- Java 17+
+- Java 21+
 - Maven 3.9+
 
 ## Quickstart

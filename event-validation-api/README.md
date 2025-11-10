@@ -1,35 +1,32 @@
-# Event Validation API
+# Event Validation API (Multi-Module)
 
-Spring Boot WebFlux service that exposes the endpoints defined in `03-event-validation-api-plan.md`:
+This directory now contains two Maven modules that ship the runtime service and its OpenAPI contract:
 
-- `POST /events/{eventName}` validates payloads against the schema registry (DynamoDB) and publishes to MSK ingress topics.
-- `GET /schemas/{domain}/{event}/{version}` returns cached schema metadata for producers/SDKs.
+| Module | Description |
+| --- | --- |
+| `service/` | Spring Boot WebFlux implementation that validates incoming events, persists schema metadata, and publishes to MSK. |
+| `oas-spec/` | Canonical OpenAPI 3.0 specification for the API, packaged as an artifact that downstream teams can consume. |
 
-## Requirements
-- Java 17+
-- Maven 3.9+
-- Access to AWS DynamoDB + MSK clusters (or configure local mocks for development)
+## Building
 
-## Running Locally
 ```bash
 cd event-validation-api
-mvn spring-boot:run \
+mvn clean install
+```
+
+- Build only the service: `mvn clean package -pl service`
+- Build only the spec artifact: `mvn clean package -pl oas-spec`
+
+## Running the service
+
+```bash
+cd event-validation-api
+mvn spring-boot:run -pl service -am \
   -Dspring-boot.run.jvmArguments="-Dspring.profiles.active=dev"
 ```
 
-Environment variables / application properties to set before running against AWS:
+See `service/README.md` for configuration details and required environment variables.
 
-| Property | Description |
-| --- | --- |
-| `webhooks.dynamodb.table-name` | Table storing schemas (`event_schema`) |
-| `webhooks.kafka.bootstrap-servers` | MSK broker list or local Kafka endpoint |
-| `webhooks.kafka.ingress-topic-prefix` | Topic prefix (e.g., `wh.ingress`) |
-| `AWS_REGION` | Region for DynamoDB/MSK |
+## Working with the OpenAPI spec
 
-## Testing
-```bash
-cd event-validation-api
-mvn test
-```
-
-Unit tests use mocked SchemaService/EventPublisher components to keep the feedback loop fast.
+The generated artifact `event-validation-api-oas` exposes `src/main/resources/openapi/event-validation-api.yml`. You can import it into Stoplight, Postman, or use it as input to code generators (e.g., `openapi-generator-cli`).
