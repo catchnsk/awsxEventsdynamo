@@ -176,7 +176,7 @@ Partition Key:
 ## 10. Project Structure
 
 ```
-listener-service/
+webhook-event-source-api/
  ├── listener/
  │     ├── AmqListener.java
  │     ├── KafkaListener.java

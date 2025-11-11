@@ -4,7 +4,7 @@ This folder contains planning documents for the webhook architecture you shared 
 
 1. **AWS Infrastructure**
 2. **Java SDK (Java 21)**
-3. **Spring Boot Event Validation API (EKS)**
+3. **Spring Boot Webhook Event Publisher API (EKS)**
 4. **Reference Spring Boot Producer App using the SDK**
 5. **Python Lambda Components**
 
