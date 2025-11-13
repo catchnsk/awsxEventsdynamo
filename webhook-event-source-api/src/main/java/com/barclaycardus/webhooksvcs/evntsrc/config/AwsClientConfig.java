@@ -1,17 +1,19 @@
 package com.barclaycardus.webhooksvcs.evntsrc.config;
 
+import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import software.amazon.awssdk.regions.Region;
-import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
 @Configuration
 public class AwsClientConfig {
 
     @Bean
-    public DynamoDbClient dynamoDbClient(ListenerProperties properties) {
-        return DynamoDbClient.builder()
-                .region(Region.of(properties.getAws().getRegion()))
+    public AmazonDynamoDB dynamoDbClient(ListenerProperties properties) {
+        return AmazonDynamoDBClientBuilder.standard()
+                .withRegion(properties.getAws().getRegion())
+                .withCredentials(DefaultAWSCredentialsProviderChain.getInstance())
                 .build();
     }
 }
