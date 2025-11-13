@@ -1,0 +1,77 @@
+{
+  "info": {
+    "name": "Webhook Event Publisher API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Sample Postman collection for exercising the Webhook Event Publisher API endpoints"
+  },
+  "item": [
+    {
+      "name": "Publish Event",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-Producer-Domain",
+            "value": "demo"
+          },
+          {
+            "key": "X-Event-Version",
+            "value": "v1"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/events/CustomerUpdated",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "events",
+            "CustomerUpdated"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"eventId\": \"{{eventId}}\",\n  \"occurredAt\": \"{{timestamp}}\",\n  \"schemaVersion\": \"v1\",\n  \"data\": {\n    \"customerId\": \"12345\",\n    \"status\": \"ACTIVE\"\n  }\n}"
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Get Schema Metadata",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/schemas/demo/CustomerUpdated/v1",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "schemas",
+            "demo",
+            "CustomerUpdated",
+            "v1"
+          ]
+        }
+      },
+      "response": []
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "eventId",
+      "value": "{{randomUUID}}"
+    },
+    {
+      "key": "timestamp",
+      "value": "{{isoTimestamp}}"
+    }
+  ]
+}
