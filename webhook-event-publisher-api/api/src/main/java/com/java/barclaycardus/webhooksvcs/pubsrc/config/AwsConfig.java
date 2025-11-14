@@ -1,20 +1,40 @@
 package com.java.barclaycardus.webhooksvcs.pubsrc.config;
 
-import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
-import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
-import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
+
+import java.net.URI;
 
 @Configuration
 public class AwsConfig {
 
+    @Value("${aws.dynamodb.endpoint:}")
+    private String dynamoDbEndpoint;
+
+    @Value("${aws.region:us-east-1}")
+    private String awsRegion;
+
     @Bean
-    public AmazonDynamoDB dynamoDbClient() {
-        String region = System.getenv().getOrDefault("AWS_REGION", "us-east-1");
-        return AmazonDynamoDBClientBuilder.standard()
-                .withCredentials(DefaultAWSCredentialsProviderChain.getInstance())
-                .withRegion(region)
-                .build();
+    public DynamoDbClient dynamoDbClient() {
+        var builder = DynamoDbClient.builder()
+                .region(Region.of(awsRegion));
+
+        if (dynamoDbEndpoint != null && !dynamoDbEndpoint.isEmpty()) {
+            // Local DynamoDB configuration
+            builder.endpointOverride(URI.create(dynamoDbEndpoint))
+                    .credentialsProvider(StaticCredentialsProvider.create(
+                            AwsBasicCredentials.create("dummy", "dummy")));
+        } else {
+            // AWS DynamoDB configuration
+            builder.credentialsProvider(DefaultCredentialsProvider.create());
+        }
+
+        return builder.build();
     }
 }

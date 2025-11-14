@@ -8,6 +8,7 @@ import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaReference;
 import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaService;
 import com.java.barclaycardus.webhooksvcs.pubsrc.validation.JsonSchemaValidator;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
@@ -24,6 +25,7 @@ class EventControllerTest {
 
     private final WebTestClient webTestClient;
 
+    @Autowired
     EventControllerTest(WebTestClient webTestClient) {
         this.webTestClient = webTestClient;
     }

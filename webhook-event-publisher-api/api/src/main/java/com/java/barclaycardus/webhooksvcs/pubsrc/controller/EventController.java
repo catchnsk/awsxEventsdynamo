@@ -58,7 +58,7 @@ public class EventController {
                                         reference,
                                         payload,
                                         Instant.now(),
-                                        Map.of("Idempotency-Key", idempotencyKeyValue)))))
+                                        Map.of("Idempotency-Key", idempotencyKeyValue))))))
                 .map(id -> ResponseEntity.accepted().body(new EventAcceptedResponse(id)));
     }
 

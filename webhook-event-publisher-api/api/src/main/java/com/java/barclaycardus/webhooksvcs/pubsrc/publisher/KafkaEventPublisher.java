@@ -47,7 +47,7 @@ public class KafkaEventPublisher implements EventPublisher {
                 properties.kafka().ingressTopicPrefix(),
                 envelope.schemaReference().domain(),
                 envelope.schemaReference().eventName());
-        return kafkaTemplate.send(topic, envelope.eventId(), payload).completable();
+        return kafkaTemplate.send(topic, envelope.eventId(), payload).toCompletableFuture();
     }
 
     private String toJson(EventEnvelope envelope) {

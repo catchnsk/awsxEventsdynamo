@@ -15,7 +15,24 @@ webhooks:
   kafka:
     bootstrap-servers: localhost:9092
     ingress-topic-prefix: wh.ingress
+aws:
+  region: us-east-1
 logging:
   level:
     root: INFO
     com.java.barclaycardus.webhooksvcs.pubsrc: DEBUG
+-spring:
+  profiles:
+    active: local
+---
+spring:
+  config:
+    activate:
+      on-profile: local
+aws:
+  dynamodb:
+    endpoint: http://localhost:8000
+  region: us-east-1
+logging:
+  level:
+    com.amazonaws: DEBUG
