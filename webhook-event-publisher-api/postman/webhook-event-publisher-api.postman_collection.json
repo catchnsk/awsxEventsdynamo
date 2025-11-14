@@ -6,7 +6,7 @@
   },
   "item": [
     {
-      "name": "Publish Transaction Created Event",
+      "name": "JSON - Publish Transaction Created Event",
       "request": {
         "method": "POST",
         "header": [
@@ -43,7 +43,93 @@
         },
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"eventHeader\": {\n    \"eventId\": \"evt-123\",\n    \"eventName\": \"transactionCreated\",\n    \"producerDomain\": \"payments\",\n    \"version\": \"1.0\",\n    \"timestamp\": \"2025-01-01T10:00:00Z\"\n  },\n  \"eventPayload\": {\n    \"transactionId\": \"txn-999\",\n    \"customerId\": \"cust-001\",\n    \"amount\": 150.75,\n    \"currency\": \"USD\",\n    \"status\": \"SUCCESS\",\n    \"metadata\": {\n      \"source\": \"mobile-app\"\n    }\n  }\n}"
+          "raw": "{\n  \"eventHeader\": {\n    \"eventId\": \"evt-123\",\n    \"eventName\": \"transactionCreated\",\n    \"producerDomain\": \"payments\",\n    \"version\": \"1.0\",\n    \"timestamp\": \"2025-11-13T23:00:00Z\"\n  },\n  \"eventPayload\": {\n    \"transactionId\": \"txn-999\",\n    \"customerId\": \"cust-001\",\n    \"amount\": 150.75,\n    \"currency\": \"USD\",\n    \"status\": \"SUCCESS\",\n    \"metadata\": {\n      \"source\": \"mobile-app\"\n    }\n  }\n}"
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "XML - Publish Transaction Created Event",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/xml"
+          },
+          {
+            "key": "X-Producer-Domain",
+            "value": "payments"
+          },
+          {
+            "key": "X-Event-Version",
+            "value": "1.0"
+          },
+          {
+            "key": "X-Event-Id",
+            "value": "evt-{{$randomUUID}}"
+          },
+          {
+            "key": "Idempotency-Key",
+            "value": "idem-{{$randomUUID}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/events/transactionCreated",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "events",
+            "transactionCreated"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "<event>\n  <eventHeader>\n    <eventId>evt-123</eventId>\n    <eventName>transactionCreated</eventName>\n    <producerDomain>payments</producerDomain>\n    <version>1.0</version>\n    <timestamp>2025-11-13T23:00:00Z</timestamp>\n  </eventHeader>\n  <eventPayload>\n    <transactionId>txn-999</transactionId>\n    <customerId>cust-001</customerId>\n    <amount>150.75</amount>\n    <currency>USD</currency>\n    <status>SUCCESS</status>\n    <metadata>\n      <source>mobile-app</source>\n    </metadata>\n  </eventPayload>\n</event>"
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Avro (JSON Encoded) - Publish Transaction Created Event",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/avro"
+          },
+          {
+            "key": "X-Producer-Domain",
+            "value": "payments"
+          },
+          {
+            "key": "X-Event-Version",
+            "value": "1.0"
+          },
+          {
+            "key": "X-Event-Id",
+            "value": "evt-{{$randomUUID}}"
+          },
+          {
+            "key": "Idempotency-Key",
+            "value": "idem-{{$randomUUID}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/events/transactionCreated",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "events",
+            "transactionCreated"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"eventHeader\": {\n    \"eventId\": \"evt-123\",\n    \"eventName\": \"transactionCreated\",\n    \"producerDomain\": \"payments\",\n    \"version\": \"1.0\",\n    \"timestamp\": \"2025-11-13T23:00:00Z\"\n  },\n  \"eventPayload\": {\n    \"transactionId\": \"txn-999\",\n    \"customerId\": \"cust-001\",\n    \"amount\": 150.75,\n    \"currency\": \"USD\",\n    \"status\": \"SUCCESS\",\n    \"metadata\": {\n      \"source\": \"mobile-app\"\n    }\n  }\n}"
         }
       },
       "response": []

@@ -37,7 +37,9 @@ public class DynamoSchemaService implements SchemaService {
                     }
                     return new SchemaDefinition(
                             reference,
-                            stringValue(item, "EVENT_SCHEMA_DEFINITION", "{}"),
+                            stringValue(item, "EVENT_SCHEMA_DEFINITION_JSON", "{}"),
+                            stringValue(item, "EVENT_SCHEMA_DEFINITION_XML", null),
+                            stringValue(item, "EVENT_SCHEMA_DEFINITION_AVRO", null),
                             "ACTIVE".equals(stringValue(item, "EVENT_SCHEMA_STATUS", "INACTIVE")),
                             Instant.parse(stringValue(item, "UPDATE_TS", Instant.now().toString()))
                     );

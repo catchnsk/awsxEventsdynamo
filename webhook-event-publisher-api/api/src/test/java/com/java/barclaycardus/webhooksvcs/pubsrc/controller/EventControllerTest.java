@@ -20,7 +20,7 @@ import reactor.core.publisher.Mono;
 import java.time.Instant;
 
 @WebFluxTest(controllers = EventController.class)
-@Import({EventControllerTest.TestConfig.class, JsonSchemaValidator.class})
+@Import({EventControllerTest.TestConfig.class})
 class EventControllerTest {
 
     private final WebTestClient webTestClient;
@@ -36,7 +36,7 @@ class EventControllerTest {
                 .uri("/events/CustomerUpdated")
                 .header("X-Producer-Domain", "demo")
                 .header("X-Event-Version", "v1")
-                .contentType(MediaType.APPLICATION_JSON)
+                .header("Content-Type", "application/json")
                 .bodyValue("{\"customerId\":\"123\"}")
                 .exchange()
                 .expectStatus().isAccepted()
@@ -59,6 +59,8 @@ class EventControllerTest {
                               "required":["customerId"]
                             }
                             """,
+                    null, // xmlSchema
+                    null, // avroSchema
                     true,
                     Instant.now()
             );
@@ -68,6 +70,26 @@ class EventControllerTest {
         @Bean
         EventPublisher eventPublisher() {
             return envelope -> Mono.just(envelope.eventId());
+        }
+
+        @Bean
+        com.java.barclaycardus.webhooksvcs.pubsrc.validation.JsonSchemaValidator jsonSchemaValidator() {
+            return new com.java.barclaycardus.webhooksvcs.pubsrc.validation.JsonSchemaValidator();
+        }
+
+        @Bean
+        com.java.barclaycardus.webhooksvcs.pubsrc.validation.XmlSchemaValidator xmlSchemaValidator() {
+            return new com.java.barclaycardus.webhooksvcs.pubsrc.validation.XmlSchemaValidator();
+        }
+
+        @Bean
+        com.java.barclaycardus.webhooksvcs.pubsrc.validation.AvroSchemaValidator avroSchemaValidator() {
+            return new com.java.barclaycardus.webhooksvcs.pubsrc.validation.AvroSchemaValidator();
+        }
+
+        @Bean
+        com.java.barclaycardus.webhooksvcs.pubsrc.converter.FormatConverter formatConverter() {
+            return new com.java.barclaycardus.webhooksvcs.pubsrc.converter.FormatConverter();
         }
     }
 }
