@@ -402,9 +402,9 @@ Add the new endpoint method:
 ```java:webhook-event-publisher-api/api/src/main/java/com/java/barclaycardus/webhooksvcs/pubsrc/controller/SchemaController.java
 package com.java.barclaycardus.webhooksvcs.pubsrc.controller;
 
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaDefinition;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaReference;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaService;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaDefinition;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaReference;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -751,9 +751,9 @@ public class DynamoSchemaService implements SchemaService {
 ```java
 package com.java.barclaycardus.webhooksvcs.pubsrc.controller;
 
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaDefinition;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaReference;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaService;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaDefinition;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaReference;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -1608,21 +1608,21 @@ The endpoint returns only active schemas from the DynamoDB table.
 
 java.lang.IllegalArgumentException: Invalid PK format: SCHEMA_0001
 
-	at com.java.barclaycardus.webhooksvcs.pubsrc.schema.DynamoSchemaService.parseSchemaReference(DynamoSchemaService.java:94) ~[classes/:na]
+	at schema.com.beewaxus.webhooksvcs.pubsrc.DynamoSchemaService.parseSchemaReference(DynamoSchemaService.java:94) ~[classes/:na]
 
 	Suppressed: reactor.core.publisher.FluxOnAssembly$OnAssemblyException: 
 
 Error has been observed at the following site(s):
 
-	*__checkpoint ⇢ Handler com.java.barclaycardus.webhooksvcs.pubsrc.controller.SchemaController#getAllSchemas() [DispatcherHandler]
+	*__checkpoint ⇢ Handler controller.com.beewaxus.webhooksvcs.pubsrc.SchemaController#getAllSchemas() [DispatcherHandler]
 
 	*__checkpoint ⇢ HTTP GET "/events/all" [ExceptionHandlingWebHandler]
 
 Original Stack Trace:
 
-		at com.java.barclaycardus.webhooksvcs.pubsrc.schema.DynamoSchemaService.parseSchemaReference(DynamoSchemaService.java:94) ~[classes/:na]
+		at schema.com.beewaxus.webhooksvcs.pubsrc.DynamoSchemaService.parseSchemaReference(DynamoSchemaService.java:94) ~[classes/:na]
 
-		at com.java.barclaycardus.webhooksvcs.pubsrc.schema.DynamoSchemaService.itemToSchemaDefinition(DynamoSchemaService.java:78) ~[classes/:na]
+		at schema.com.beewaxus.webhooksvcs.pubsrc.DynamoSchemaService.itemToSchemaDefinition(DynamoSchemaService.java:78) ~[classes/:na]
 
 ---
 
@@ -1642,7 +1642,7 @@ Updated `DynamoSchemaService.java` to handle both PK/SK format and direct attrib
 ```java:webhook-event-publisher-api/api/src/main/java/com/java/barclaycardus/webhooksvcs/pubsrc/schema/DynamoSchemaService.java
 package com.java.barclaycardus.webhooksvcs.pubsrc.schema;
 
-import com.java.barclaycardus.webhooksvcs.pubsrc.config.WebhooksProperties;
+import config.com.beewaxus.webhooksvcs.pubsrc.WebhooksProperties;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
@@ -1796,7 +1796,7 @@ Note: You're in ask mode. Switch to agent mode to apply these changes, or copy t
 ```java
 package com.java.barclaycardus.webhooksvcs.pubsrc.schema;
 
-import com.java.barclaycardus.webhooksvcs.pubsrc.config.WebhooksProperties;
+import config.com.beewaxus.webhooksvcs.pubsrc.WebhooksProperties;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
@@ -2332,10 +2332,10 @@ Add the new endpoint:
 ```java:webhook-event-publisher-api/api/src/main/java/com/java/barclaycardus/webhooksvcs/pubsrc/controller/SchemaController.java
 package com.java.barclaycardus.webhooksvcs.pubsrc.controller;
 
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaDefinition;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaDetailResponse;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaReference;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaService;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaDefinition;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaDetailResponse;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaReference;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -2637,10 +2637,10 @@ public class DynamoSchemaService implements SchemaService {
 ```java
 package com.java.barclaycardus.webhooksvcs.pubsrc.controller;
 
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaDefinition;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaDetailResponse;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaReference;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaService;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaDefinition;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaDetailResponse;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaReference;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -2869,7 +2869,7 @@ public interface SchemaService {
 ```java
 package com.java.barclaycardus.webhooksvcs.pubsrc.schema;
 
-import com.java.barclaycardus.webhooksvcs.pubsrc.config.WebhooksProperties;
+import config.com.beewaxus.webhooksvcs.pubsrc.WebhooksProperties;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
@@ -3009,7 +3009,7 @@ public class DynamoSchemaService implements SchemaService {
 ```java
 package com.java.barclaycardus.webhooksvcs.pubsrc.schema;
 
-import com.java.barclaycardus.webhooksvcs.pubsrc.config.WebhooksProperties;
+import config.com.beewaxus.webhooksvcs.pubsrc.WebhooksProperties;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
@@ -3175,7 +3175,7 @@ public class DynamoSchemaService implements SchemaService {
 ```java
 package com.java.barclaycardus.webhooksvcs.pubsrc.schema;
 
-import com.java.barclaycardus.webhooksvcs.pubsrc.config.WebhooksProperties;
+import config.com.beewaxus.webhooksvcs.pubsrc.WebhooksProperties;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
@@ -3372,10 +3372,10 @@ public class DynamoSchemaService implements SchemaService {
 ```java
 package com.java.barclaycardus.webhooksvcs.pubsrc.controller;
 
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaDefinition;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaDetailResponse;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaReference;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaService;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaDefinition;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaDetailResponse;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaReference;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -3419,10 +3419,10 @@ public class SchemaController {
 ```java
 package com.java.barclaycardus.webhooksvcs.pubsrc.controller;
 
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaDefinition;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaDetailResponse;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaReference;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaService;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaDefinition;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaDetailResponse;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaReference;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -4440,7 +4440,7 @@ Improving error handling and adding logging to debug the issue:
 ```java
 package com.java.barclaycardus.webhooksvcs.pubsrc.schema;
 
-import com.java.barclaycardus.webhooksvcs.pubsrc.config.WebhooksProperties;
+import config.com.beewaxus.webhooksvcs.pubsrc.WebhooksProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -4640,7 +4640,7 @@ public class DynamoSchemaService implements SchemaService {
 ```java
 package com.java.barclaycardus.webhooksvcs.pubsrc.schema;
 
-import com.java.barclaycardus.webhooksvcs.pubsrc.config.WebhooksProperties;
+import config.com.beewaxus.webhooksvcs.pubsrc.WebhooksProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -4842,7 +4842,7 @@ public class DynamoSchemaService implements SchemaService {
 ```java
 package com.java.barclaycardus.webhooksvcs.pubsrc.schema;
 
-import com.java.barclaycardus.webhooksvcs.pubsrc.config.WebhooksProperties;
+import config.com.beewaxus.webhooksvcs.pubsrc.WebhooksProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -5058,7 +5058,7 @@ public class DynamoSchemaService implements SchemaService {
 ```java
 package com.java.barclaycardus.webhooksvcs.pubsrc.schema;
 
-import com.java.barclaycardus.webhooksvcs.pubsrc.config.WebhooksProperties;
+import config.com.beewaxus.webhooksvcs.pubsrc.WebhooksProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -5298,7 +5298,7 @@ Fixing the variable scope issue in the logging:
 ```java
 package com.java.barclaycardus.webhooksvcs.pubsrc.schema;
 
-import com.java.barclaycardus.webhooksvcs.pubsrc.config.WebhooksProperties;
+import config.com.beewaxus.webhooksvcs.pubsrc.WebhooksProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -5578,7 +5578,7 @@ Share the log output if you want help interpreting it.
 
 **User**
 
-incompatible types: com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaService is not a functional interface
+incompatible types: schema.com.beewaxus.webhooksvcs.pubsrc.SchemaService is not a functional interface
 
 ---
 
@@ -5633,7 +5633,7 @@ The code structure is correct, so this is likely a cache/compilation state issue
 
 **User**
 
-incompatible types: com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaService is not a functional interface
+incompatible types: schema.com.beewaxus.webhooksvcs.pubsrc.SchemaService is not a functional interface
 
 ---
 
@@ -5655,13 +5655,13 @@ Fixing the test: line 67 uses a lambda for `SchemaService`, but it's not a funct
 package com.java.barclaycardus.webhooksvcs.pubsrc.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.java.barclaycardus.webhooksvcs.pubsrc.model.EventEnvelope;
-import com.java.barclaycardus.webhooksvcs.pubsrc.publisher.EventPublisher;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaDefinition;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaDetailResponse;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaReference;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaService;
-import com.java.barclaycardus.webhooksvcs.pubsrc.validation.JsonSchemaValidator;
+import model.com.beewaxus.webhooksvcs.pubsrc.EventEnvelope;
+import publisher.com.beewaxus.webhooksvcs.pubsrc.EventPublisher;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaDefinition;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaDetailResponse;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaReference;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaService;
+import validation.com.beewaxus.webhooksvcs.pubsrc.JsonSchemaValidator;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
@@ -5729,23 +5729,23 @@ class EventControllerTest {
         }
 
         @Bean
-        com.java.barclaycardus.webhooksvcs.pubsrc.validation.JsonSchemaValidator jsonSchemaValidator() {
-            return new com.java.barclaycardus.webhooksvcs.pubsrc.validation.JsonSchemaValidator();
+        validation.com.beewaxus.webhooksvcs.pubsrc.JsonSchemaValidator jsonSchemaValidator() {
+            return new validation.com.beewaxus.webhooksvcs.pubsrc.JsonSchemaValidator();
         }
 
         @Bean
-        com.java.barclaycardus.webhooksvcs.pubsrc.validation.XmlSchemaValidator xmlSchemaValidator() {
-            return new com.java.barclaycardus.webhooksvcs.pubsrc.validation.XmlSchemaValidator();
+        validation.com.beewaxus.webhooksvcs.pubsrc.XmlSchemaValidator xmlSchemaValidator() {
+            return new validation.com.beewaxus.webhooksvcs.pubsrc.XmlSchemaValidator();
         }
 
         @Bean
-        com.java.barclaycardus.webhooksvcs.pubsrc.validation.AvroSchemaValidator avroSchemaValidator() {
-            return new com.java.barclaycardus.webhooksvcs.pubsrc.validation.AvroSchemaValidator();
+        validation.com.beewaxus.webhooksvcs.pubsrc.AvroSchemaValidator avroSchemaValidator() {
+            return new validation.com.beewaxus.webhooksvcs.pubsrc.AvroSchemaValidator();
         }
 
         @Bean
-        com.java.barclaycardus.webhooksvcs.pubsrc.converter.FormatConverter formatConverter() {
-            return new com.java.barclaycardus.webhooksvcs.pubsrc.converter.FormatConverter();
+        converter.com.beewaxus.webhooksvcs.pubsrc.FormatConverter formatConverter() {
+            return new converter.com.beewaxus.webhooksvcs.pubsrc.FormatConverter();
         }
     }
 }
@@ -5756,13 +5756,13 @@ class EventControllerTest {
 package com.java.barclaycardus.webhooksvcs.pubsrc.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.java.barclaycardus.webhooksvcs.pubsrc.model.EventEnvelope;
-import com.java.barclaycardus.webhooksvcs.pubsrc.publisher.EventPublisher;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaDefinition;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaDetailResponse;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaReference;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaService;
-import com.java.barclaycardus.webhooksvcs.pubsrc.validation.JsonSchemaValidator;
+import model.com.beewaxus.webhooksvcs.pubsrc.EventEnvelope;
+import publisher.com.beewaxus.webhooksvcs.pubsrc.EventPublisher;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaDefinition;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaDetailResponse;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaReference;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaService;
+import validation.com.beewaxus.webhooksvcs.pubsrc.JsonSchemaValidator;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
@@ -5845,23 +5845,23 @@ class EventControllerTest {
         }
 
         @Bean
-        com.java.barclaycardus.webhooksvcs.pubsrc.validation.JsonSchemaValidator jsonSchemaValidator() {
-            return new com.java.barclaycardus.webhooksvcs.pubsrc.validation.JsonSchemaValidator();
+        validation.com.beewaxus.webhooksvcs.pubsrc.JsonSchemaValidator jsonSchemaValidator() {
+            return new validation.com.beewaxus.webhooksvcs.pubsrc.JsonSchemaValidator();
         }
 
         @Bean
-        com.java.barclaycardus.webhooksvcs.pubsrc.validation.XmlSchemaValidator xmlSchemaValidator() {
-            return new com.java.barclaycardus.webhooksvcs.pubsrc.validation.XmlSchemaValidator();
+        validation.com.beewaxus.webhooksvcs.pubsrc.XmlSchemaValidator xmlSchemaValidator() {
+            return new validation.com.beewaxus.webhooksvcs.pubsrc.XmlSchemaValidator();
         }
 
         @Bean
-        com.java.barclaycardus.webhooksvcs.pubsrc.validation.AvroSchemaValidator avroSchemaValidator() {
-            return new com.java.barclaycardus.webhooksvcs.pubsrc.validation.AvroSchemaValidator();
+        validation.com.beewaxus.webhooksvcs.pubsrc.AvroSchemaValidator avroSchemaValidator() {
+            return new validation.com.beewaxus.webhooksvcs.pubsrc.AvroSchemaValidator();
         }
 
         @Bean
-        com.java.barclaycardus.webhooksvcs.pubsrc.converter.FormatConverter formatConverter() {
-            return new com.java.barclaycardus.webhooksvcs.pubsrc.converter.FormatConverter();
+        converter.com.beewaxus.webhooksvcs.pubsrc.FormatConverter formatConverter() {
+            return new converter.com.beewaxus.webhooksvcs.pubsrc.FormatConverter();
         }
     }
 }
@@ -6207,7 +6207,7 @@ Updating the plan to include Avro binary conversion before publishing to Kafka. 
 ### Phase 1: Avro Serialization Service
 
 #### 1.1 Create `AvroSerializer` Component
-- New class: `com.java.barclaycardus.webhooksvcs.pubsrc.converter.AvroSerializer`
+- New class: `converter.com.beewaxus.webhooksvcs.pubsrc.AvroSerializer`
 - Method: `Mono<byte[]> serializeToAvro(GenericRecord record, Schema schema)`
 - Implementation:
   ```java
@@ -6636,7 +6636,7 @@ Updating the EventPublisher interface and Kafka configuration:
 ```java
 package com.java.barclaycardus.webhooksvcs.pubsrc.publisher;
 
-import com.java.barclaycardus.webhooksvcs.pubsrc.model.EventEnvelope;
+import model.com.beewaxus.webhooksvcs.pubsrc.EventEnvelope;
 import reactor.core.publisher.Mono;
 
 public interface EventPublisher {
@@ -6704,8 +6704,8 @@ package com.java.barclaycardus.webhooksvcs.pubsrc.publisher;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.java.barclaycardus.webhooksvcs.pubsrc.config.WebhooksProperties;
-import com.java.barclaycardus.webhooksvcs.pubsrc.model.EventEnvelope;
+import config.com.beewaxus.webhooksvcs.pubsrc.WebhooksProperties;
+import model.com.beewaxus.webhooksvcs.pubsrc.EventEnvelope;
 import org.apache.kafka.clients.producer.RecordMetadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -6771,8 +6771,8 @@ package com.java.barclaycardus.webhooksvcs.pubsrc.publisher;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.java.barclaycardus.webhooksvcs.pubsrc.config.WebhooksProperties;
-import com.java.barclaycardus.webhooksvcs.pubsrc.model.EventEnvelope;
+import config.com.beewaxus.webhooksvcs.pubsrc.WebhooksProperties;
+import model.com.beewaxus.webhooksvcs.pubsrc.EventEnvelope;
 import org.apache.kafka.clients.producer.RecordMetadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -6864,18 +6864,18 @@ package com.java.barclaycardus.webhooksvcs.pubsrc.controller;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.java.barclaycardus.webhooksvcs.pubsrc.converter.AvroSerializer;
-import com.java.barclaycardus.webhooksvcs.pubsrc.converter.FormatConverter;
-import com.java.barclaycardus.webhooksvcs.pubsrc.model.EventEnvelope;
-import com.java.barclaycardus.webhooksvcs.pubsrc.publisher.EventPublisher;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaDefinition;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaDetailResponse;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaFormat;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaReference;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaService;
-import com.java.barclaycardus.webhooksvcs.pubsrc.validation.AvroSchemaValidator;
-import com.java.barclaycardus.webhooksvcs.pubsrc.validation.JsonSchemaValidator;
-import com.java.barclaycardus.webhooksvcs.pubsrc.validation.XmlSchemaValidator;
+import converter.com.beewaxus.webhooksvcs.pubsrc.AvroSerializer;
+import converter.com.beewaxus.webhooksvcs.pubsrc.FormatConverter;
+import model.com.beewaxus.webhooksvcs.pubsrc.EventEnvelope;
+import publisher.com.beewaxus.webhooksvcs.pubsrc.EventPublisher;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaDefinition;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaDetailResponse;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaFormat;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaReference;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaService;
+import validation.com.beewaxus.webhooksvcs.pubsrc.AvroSchemaValidator;
+import validation.com.beewaxus.webhooksvcs.pubsrc.JsonSchemaValidator;
+import validation.com.beewaxus.webhooksvcs.pubsrc.XmlSchemaValidator;
 import jakarta.validation.constraints.NotBlank;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericDatumReader;
@@ -6978,18 +6978,18 @@ package com.java.barclaycardus.webhooksvcs.pubsrc.controller;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.java.barclaycardus.webhooksvcs.pubsrc.converter.AvroSerializer;
-import com.java.barclaycardus.webhooksvcs.pubsrc.converter.FormatConverter;
-import com.java.barclaycardus.webhooksvcs.pubsrc.model.EventEnvelope;
-import com.java.barclaycardus.webhooksvcs.pubsrc.publisher.EventPublisher;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaDefinition;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaDetailResponse;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaFormat;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaReference;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaService;
-import com.java.barclaycardus.webhooksvcs.pubsrc.validation.AvroSchemaValidator;
-import com.java.barclaycardus.webhooksvcs.pubsrc.validation.JsonSchemaValidator;
-import com.java.barclaycardus.webhooksvcs.pubsrc.validation.XmlSchemaValidator;
+import converter.com.beewaxus.webhooksvcs.pubsrc.AvroSerializer;
+import converter.com.beewaxus.webhooksvcs.pubsrc.FormatConverter;
+import model.com.beewaxus.webhooksvcs.pubsrc.EventEnvelope;
+import publisher.com.beewaxus.webhooksvcs.pubsrc.EventPublisher;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaDefinition;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaDetailResponse;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaFormat;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaReference;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaService;
+import validation.com.beewaxus.webhooksvcs.pubsrc.AvroSchemaValidator;
+import validation.com.beewaxus.webhooksvcs.pubsrc.JsonSchemaValidator;
+import validation.com.beewaxus.webhooksvcs.pubsrc.XmlSchemaValidator;
 import jakarta.validation.constraints.NotBlank;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericDatumReader;
@@ -7095,18 +7095,18 @@ package com.java.barclaycardus.webhooksvcs.pubsrc.controller;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.java.barclaycardus.webhooksvcs.pubsrc.converter.AvroSerializer;
-import com.java.barclaycardus.webhooksvcs.pubsrc.converter.FormatConverter;
-import com.java.barclaycardus.webhooksvcs.pubsrc.model.EventEnvelope;
-import com.java.barclaycardus.webhooksvcs.pubsrc.publisher.EventPublisher;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaDefinition;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaDetailResponse;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaFormat;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaReference;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaService;
-import com.java.barclaycardus.webhooksvcs.pubsrc.validation.AvroSchemaValidator;
-import com.java.barclaycardus.webhooksvcs.pubsrc.validation.JsonSchemaValidator;
-import com.java.barclaycardus.webhooksvcs.pubsrc.validation.XmlSchemaValidator;
+import converter.com.beewaxus.webhooksvcs.pubsrc.AvroSerializer;
+import converter.com.beewaxus.webhooksvcs.pubsrc.FormatConverter;
+import model.com.beewaxus.webhooksvcs.pubsrc.EventEnvelope;
+import publisher.com.beewaxus.webhooksvcs.pubsrc.EventPublisher;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaDefinition;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaDetailResponse;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaFormat;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaReference;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaService;
+import validation.com.beewaxus.webhooksvcs.pubsrc.AvroSchemaValidator;
+import validation.com.beewaxus.webhooksvcs.pubsrc.JsonSchemaValidator;
+import validation.com.beewaxus.webhooksvcs.pubsrc.XmlSchemaValidator;
 import jakarta.validation.constraints.NotBlank;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericDatumReader;
@@ -7329,13 +7329,13 @@ Updating the test configuration to include AvroSerializer:
 package com.java.barclaycardus.webhooksvcs.pubsrc.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.java.barclaycardus.webhooksvcs.pubsrc.model.EventEnvelope;
-import com.java.barclaycardus.webhooksvcs.pubsrc.publisher.EventPublisher;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaDefinition;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaDetailResponse;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaReference;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaService;
-import com.java.barclaycardus.webhooksvcs.pubsrc.validation.JsonSchemaValidator;
+import model.com.beewaxus.webhooksvcs.pubsrc.EventEnvelope;
+import publisher.com.beewaxus.webhooksvcs.pubsrc.EventPublisher;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaDefinition;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaDetailResponse;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaReference;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaService;
+import validation.com.beewaxus.webhooksvcs.pubsrc.JsonSchemaValidator;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
@@ -7416,40 +7416,40 @@ class EventControllerTest {
         EventPublisher eventPublisher() {
             return new EventPublisher() {
                 @Override
-                public Mono<String> publish(com.java.barclaycardus.webhooksvcs.pubsrc.model.EventEnvelope envelope) {
+                public Mono<String> publish(model.com.beewaxus.webhooksvcs.pubsrc.EventEnvelope envelope) {
                     return Mono.just(envelope.eventId());
                 }
 
                 @Override
-                public Mono<String> publishAvro(com.java.barclaycardus.webhooksvcs.pubsrc.model.EventEnvelope envelope, String topicName, byte[] avroBytes) {
+                public Mono<String> publishAvro(model.com.beewaxus.webhooksvcs.pubsrc.EventEnvelope envelope, String topicName, byte[] avroBytes) {
                     return Mono.just(envelope.eventId());
                 }
             };
         }
 
         @Bean
-        com.java.barclaycardus.webhooksvcs.pubsrc.converter.AvroSerializer avroSerializer() {
-            return new com.java.barclaycardus.webhooksvcs.pubsrc.converter.AvroSerializer();
+        converter.com.beewaxus.webhooksvcs.pubsrc.AvroSerializer avroSerializer() {
+            return new converter.com.beewaxus.webhooksvcs.pubsrc.AvroSerializer();
         }
 
         @Bean
-        com.java.barclaycardus.webhooksvcs.pubsrc.validation.JsonSchemaValidator jsonSchemaValidator() {
-            return new com.java.barclaycardus.webhooksvcs.pubsrc.validation.JsonSchemaValidator();
+        validation.com.beewaxus.webhooksvcs.pubsrc.JsonSchemaValidator jsonSchemaValidator() {
+            return new validation.com.beewaxus.webhooksvcs.pubsrc.JsonSchemaValidator();
         }
 
         @Bean
-        com.java.barclaycardus.webhooksvcs.pubsrc.validation.XmlSchemaValidator xmlSchemaValidator() {
-            return new com.java.barclaycardus.webhooksvcs.pubsrc.validation.XmlSchemaValidator();
+        validation.com.beewaxus.webhooksvcs.pubsrc.XmlSchemaValidator xmlSchemaValidator() {
+            return new validation.com.beewaxus.webhooksvcs.pubsrc.XmlSchemaValidator();
         }
 
         @Bean
-        com.java.barclaycardus.webhooksvcs.pubsrc.validation.AvroSchemaValidator avroSchemaValidator() {
-            return new com.java.barclaycardus.webhooksvcs.pubsrc.validation.AvroSchemaValidator();
+        validation.com.beewaxus.webhooksvcs.pubsrc.AvroSchemaValidator avroSchemaValidator() {
+            return new validation.com.beewaxus.webhooksvcs.pubsrc.AvroSchemaValidator();
         }
 
         @Bean
-        com.java.barclaycardus.webhooksvcs.pubsrc.converter.FormatConverter formatConverter() {
-            return new com.java.barclaycardus.webhooksvcs.pubsrc.converter.FormatConverter();
+        converter.com.beewaxus.webhooksvcs.pubsrc.FormatConverter formatConverter() {
+            return new converter.com.beewaxus.webhooksvcs.pubsrc.FormatConverter();
         }
     }
 }
@@ -8362,13 +8362,13 @@ Adding tests for the new endpoint. The existing test only covers the old endpoin
 package com.java.barclaycardus.webhooksvcs.pubsrc.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.java.barclaycardus.webhooksvcs.pubsrc.model.EventEnvelope;
-import com.java.barclaycardus.webhooksvcs.pubsrc.publisher.EventPublisher;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaDefinition;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaDetailResponse;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaReference;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaService;
-import com.java.barclaycardus.webhooksvcs.pubsrc.validation.JsonSchemaValidator;
+import model.com.beewaxus.webhooksvcs.pubsrc.EventEnvelope;
+import publisher.com.beewaxus.webhooksvcs.pubsrc.EventPublisher;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaDefinition;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaDetailResponse;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaReference;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaService;
+import validation.com.beewaxus.webhooksvcs.pubsrc.JsonSchemaValidator;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
@@ -8564,40 +8564,40 @@ class EventControllerTest {
         EventPublisher eventPublisher() {
             return new EventPublisher() {
                 @Override
-                public Mono<String> publish(com.java.barclaycardus.webhooksvcs.pubsrc.model.EventEnvelope envelope) {
+                public Mono<String> publish(model.com.beewaxus.webhooksvcs.pubsrc.EventEnvelope envelope) {
                     return Mono.just(envelope.eventId());
                 }
 
                 @Override
-                public Mono<String> publishAvro(com.java.barclaycardus.webhooksvcs.pubsrc.model.EventEnvelope envelope, String topicName, byte[] avroBytes) {
+                public Mono<String> publishAvro(model.com.beewaxus.webhooksvcs.pubsrc.EventEnvelope envelope, String topicName, byte[] avroBytes) {
                     return Mono.just(envelope.eventId());
                 }
             };
         }
 
         @Bean
-        com.java.barclaycardus.webhooksvcs.pubsrc.converter.AvroSerializer avroSerializer() {
-            return new com.java.barclaycardus.webhooksvcs.pubsrc.converter.AvroSerializer();
+        converter.com.beewaxus.webhooksvcs.pubsrc.AvroSerializer avroSerializer() {
+            return new converter.com.beewaxus.webhooksvcs.pubsrc.AvroSerializer();
         }
 
         @Bean
-        com.java.barclaycardus.webhooksvcs.pubsrc.validation.JsonSchemaValidator jsonSchemaValidator() {
-            return new com.java.barclaycardus.webhooksvcs.pubsrc.validation.JsonSchemaValidator();
+        validation.com.beewaxus.webhooksvcs.pubsrc.JsonSchemaValidator jsonSchemaValidator() {
+            return new validation.com.beewaxus.webhooksvcs.pubsrc.JsonSchemaValidator();
         }
 
         @Bean
-        com.java.barclaycardus.webhooksvcs.pubsrc.validation.XmlSchemaValidator xmlSchemaValidator() {
-            return new com.java.barclaycardus.webhooksvcs.pubsrc.validation.XmlSchemaValidator();
+        validation.com.beewaxus.webhooksvcs.pubsrc.XmlSchemaValidator xmlSchemaValidator() {
+            return new validation.com.beewaxus.webhooksvcs.pubsrc.XmlSchemaValidator();
         }
 
         @Bean
-        com.java.barclaycardus.webhooksvcs.pubsrc.validation.AvroSchemaValidator avroSchemaValidator() {
-            return new com.java.barclaycardus.webhooksvcs.pubsrc.validation.AvroSchemaValidator();
+        validation.com.beewaxus.webhooksvcs.pubsrc.AvroSchemaValidator avroSchemaValidator() {
+            return new validation.com.beewaxus.webhooksvcs.pubsrc.AvroSchemaValidator();
         }
 
         @Bean
-        com.java.barclaycardus.webhooksvcs.pubsrc.converter.FormatConverter formatConverter() {
-            return new com.java.barclaycardus.webhooksvcs.pubsrc.converter.FormatConverter();
+        converter.com.beewaxus.webhooksvcs.pubsrc.FormatConverter formatConverter() {
+            return new converter.com.beewaxus.webhooksvcs.pubsrc.FormatConverter();
         }
     }
 }
@@ -8608,13 +8608,13 @@ class EventControllerTest {
 package com.java.barclaycardus.webhooksvcs.pubsrc.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.java.barclaycardus.webhooksvcs.pubsrc.model.EventEnvelope;
-import com.java.barclaycardus.webhooksvcs.pubsrc.publisher.EventPublisher;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaDefinition;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaDetailResponse;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaReference;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaService;
-import com.java.barclaycardus.webhooksvcs.pubsrc.validation.JsonSchemaValidator;
+import model.com.beewaxus.webhooksvcs.pubsrc.EventEnvelope;
+import publisher.com.beewaxus.webhooksvcs.pubsrc.EventPublisher;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaDefinition;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaDetailResponse;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaReference;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaService;
+import validation.com.beewaxus.webhooksvcs.pubsrc.JsonSchemaValidator;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
@@ -8926,40 +8926,40 @@ class EventControllerTest {
         EventPublisher eventPublisher() {
             return new EventPublisher() {
                 @Override
-                public Mono<String> publish(com.java.barclaycardus.webhooksvcs.pubsrc.model.EventEnvelope envelope) {
+                public Mono<String> publish(model.com.beewaxus.webhooksvcs.pubsrc.EventEnvelope envelope) {
                     return Mono.just(envelope.eventId());
                 }
 
                 @Override
-                public Mono<String> publishAvro(com.java.barclaycardus.webhooksvcs.pubsrc.model.EventEnvelope envelope, String topicName, byte[] avroBytes) {
+                public Mono<String> publishAvro(model.com.beewaxus.webhooksvcs.pubsrc.EventEnvelope envelope, String topicName, byte[] avroBytes) {
                     return Mono.just(envelope.eventId());
                 }
             };
         }
 
         @Bean
-        com.java.barclaycardus.webhooksvcs.pubsrc.converter.AvroSerializer avroSerializer() {
-            return new com.java.barclaycardus.webhooksvcs.pubsrc.converter.AvroSerializer();
+        converter.com.beewaxus.webhooksvcs.pubsrc.AvroSerializer avroSerializer() {
+            return new converter.com.beewaxus.webhooksvcs.pubsrc.AvroSerializer();
         }
 
         @Bean
-        com.java.barclaycardus.webhooksvcs.pubsrc.validation.JsonSchemaValidator jsonSchemaValidator() {
-            return new com.java.barclaycardus.webhooksvcs.pubsrc.validation.JsonSchemaValidator();
+        validation.com.beewaxus.webhooksvcs.pubsrc.JsonSchemaValidator jsonSchemaValidator() {
+            return new validation.com.beewaxus.webhooksvcs.pubsrc.JsonSchemaValidator();
         }
 
         @Bean
-        com.java.barclaycardus.webhooksvcs.pubsrc.validation.XmlSchemaValidator xmlSchemaValidator() {
-            return new com.java.barclaycardus.webhooksvcs.pubsrc.validation.XmlSchemaValidator();
+        validation.com.beewaxus.webhooksvcs.pubsrc.XmlSchemaValidator xmlSchemaValidator() {
+            return new validation.com.beewaxus.webhooksvcs.pubsrc.XmlSchemaValidator();
         }
 
         @Bean
-        com.java.barclaycardus.webhooksvcs.pubsrc.validation.AvroSchemaValidator avroSchemaValidator() {
-            return new com.java.barclaycardus.webhooksvcs.pubsrc.validation.AvroSchemaValidator();
+        validation.com.beewaxus.webhooksvcs.pubsrc.AvroSchemaValidator avroSchemaValidator() {
+            return new validation.com.beewaxus.webhooksvcs.pubsrc.AvroSchemaValidator();
         }
 
         @Bean
-        com.java.barclaycardus.webhooksvcs.pubsrc.converter.FormatConverter formatConverter() {
-            return new com.java.barclaycardus.webhooksvcs.pubsrc.converter.FormatConverter();
+        converter.com.beewaxus.webhooksvcs.pubsrc.FormatConverter formatConverter() {
+            return new converter.com.beewaxus.webhooksvcs.pubsrc.FormatConverter();
         }
     }
 }
@@ -9278,7 +9278,7 @@ java.lang.NullPointerException: Cannot invoke "String.length()" because "s" is n
 
 Error has been observed at the following site(s):
 
-	*__checkpoint ⇢ Handler com.java.barclaycardus.webhooksvcs.pubsrc.controller.EventController#publishEventBySchemaId(String, String, String, String, Map) [DispatcherHandler]
+	*__checkpoint ⇢ Handler controller.com.beewaxus.webhooksvcs.pubsrc.EventController#publishEventBySchemaId(String, String, String, String, Map) [DispatcherHandler]
 
 	*__checkpoint ⇢ HTTP POST "/events/schema_id/SCHEMA_0001" [ExceptionHandlingWebHandler]
 
@@ -9286,7 +9286,7 @@ Original Stack Trace:
 
 		at java.base/java.io.StringReader.<init>(StringReader.java:50) ~[na:na]
 
-		at com.java.barclaycardus.webhooksvcs.pubsrc.validation.XmlSchemaValidator.lambda$validate$0(XmlSchemaValidator.java:23) ~[classes/:na]
+		at validation.com.beewaxus.webhooksvcs.pubsrc.XmlSchemaValidator.lambda$validate$0(XmlSchemaValidator.java:23) ~[classes/:na]
 
 		at reactor.core.publisher.MonoCallable.call(MonoCallable.java:72) ~[reactor-core-3.6.7.jar:3.6.7]
 
@@ -9342,9 +9342,9 @@ Original Stack Trace:
 
 2025-11-15T21:51:48.307-05:00 DEBUG 84126 --- [event-validation-api] [oundedElastic-1] c.j.b.w.pubsrc.converter.AvroSerializer  : Serialized Avro record to 11 bytes
 
-[ERROR] Tests run: 11, Failures: 1, Errors: 0, Skipped: 0, Time elapsed: 1.120 s <<< FAILURE! -- in com.java.barclaycardus.webhooksvcs.pubsrc.controller.EventControllerTest
+[ERROR] Tests run: 11, Failures: 1, Errors: 0, Skipped: 0, Time elapsed: 1.120 s <<< FAILURE! -- in controller.com.beewaxus.webhooksvcs.pubsrc.EventControllerTest
 
-[ERROR] com.java.barclaycardus.webhooksvcs.pubsrc.controller.EventControllerTest.publishEventBySchemaId_WithValidXmlPayload_ReturnsAccepted -- Time elapsed: 0.018 s <<< FAILURE!
+[ERROR] controller.com.beewaxus.webhooksvcs.pubsrc.EventControllerTest.publishEventBySchemaId_WithValidXmlPayload_ReturnsAccepted -- Time elapsed: 0.018 s <<< FAILURE!
 
 java.lang.AssertionError: Status expected:<202 ACCEPTED> but was:<500 INTERNAL_SERVER_ERROR>
 
@@ -9360,7 +9360,7 @@ java.lang.AssertionError: Status expected:<202 ACCEPTED> but was:<500 INTERNAL_S
 
 	at org.springframework.test.web.reactive.server.StatusAssertions.isAccepted(StatusAssertions.java:82)
 
-	at com.java.barclaycardus.webhooksvcs.pubsrc.controller.EventControllerTest.publishEventBySchemaId_WithValidXmlPayload_ReturnsAccepted(EventControllerTest.java:72)
+	at controller.com.beewaxus.webhooksvcs.pubsrc.EventControllerTest.publishEventBySchemaId_WithValidXmlPayload_ReturnsAccepted(EventControllerTest.java:72)
 
 	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
 
@@ -9438,13 +9438,13 @@ The test data has a null XML schema, causing the XML validator to fail. Adding a
 package com.java.barclaycardus.webhooksvcs.pubsrc.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.java.barclaycardus.webhooksvcs.pubsrc.model.EventEnvelope;
-import com.java.barclaycardus.webhooksvcs.pubsrc.publisher.EventPublisher;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaDefinition;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaDetailResponse;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaReference;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaService;
-import com.java.barclaycardus.webhooksvcs.pubsrc.validation.JsonSchemaValidator;
+import model.com.beewaxus.webhooksvcs.pubsrc.EventEnvelope;
+import publisher.com.beewaxus.webhooksvcs.pubsrc.EventPublisher;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaDefinition;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaDetailResponse;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaReference;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaService;
+import validation.com.beewaxus.webhooksvcs.pubsrc.JsonSchemaValidator;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
@@ -9770,40 +9770,40 @@ class EventControllerTest {
         EventPublisher eventPublisher() {
             return new EventPublisher() {
                 @Override
-                public Mono<String> publish(com.java.barclaycardus.webhooksvcs.pubsrc.model.EventEnvelope envelope) {
+                public Mono<String> publish(model.com.beewaxus.webhooksvcs.pubsrc.EventEnvelope envelope) {
                     return Mono.just(envelope.eventId());
                 }
 
                 @Override
-                public Mono<String> publishAvro(com.java.barclaycardus.webhooksvcs.pubsrc.model.EventEnvelope envelope, String topicName, byte[] avroBytes) {
+                public Mono<String> publishAvro(model.com.beewaxus.webhooksvcs.pubsrc.EventEnvelope envelope, String topicName, byte[] avroBytes) {
                     return Mono.just(envelope.eventId());
                 }
             };
         }
 
         @Bean
-        com.java.barclaycardus.webhooksvcs.pubsrc.converter.AvroSerializer avroSerializer() {
-            return new com.java.barclaycardus.webhooksvcs.pubsrc.converter.AvroSerializer();
+        converter.com.beewaxus.webhooksvcs.pubsrc.AvroSerializer avroSerializer() {
+            return new converter.com.beewaxus.webhooksvcs.pubsrc.AvroSerializer();
         }
 
         @Bean
-        com.java.barclaycardus.webhooksvcs.pubsrc.validation.JsonSchemaValidator jsonSchemaValidator() {
-            return new com.java.barclaycardus.webhooksvcs.pubsrc.validation.JsonSchemaValidator();
+        validation.com.beewaxus.webhooksvcs.pubsrc.JsonSchemaValidator jsonSchemaValidator() {
+            return new validation.com.beewaxus.webhooksvcs.pubsrc.JsonSchemaValidator();
         }
 
         @Bean
-        com.java.barclaycardus.webhooksvcs.pubsrc.validation.XmlSchemaValidator xmlSchemaValidator() {
-            return new com.java.barclaycardus.webhooksvcs.pubsrc.validation.XmlSchemaValidator();
+        validation.com.beewaxus.webhooksvcs.pubsrc.XmlSchemaValidator xmlSchemaValidator() {
+            return new validation.com.beewaxus.webhooksvcs.pubsrc.XmlSchemaValidator();
         }
 
         @Bean
-        com.java.barclaycardus.webhooksvcs.pubsrc.validation.AvroSchemaValidator avroSchemaValidator() {
-            return new com.java.barclaycardus.webhooksvcs.pubsrc.validation.AvroSchemaValidator();
+        validation.com.beewaxus.webhooksvcs.pubsrc.AvroSchemaValidator avroSchemaValidator() {
+            return new validation.com.beewaxus.webhooksvcs.pubsrc.AvroSchemaValidator();
         }
 
         @Bean
-        com.java.barclaycardus.webhooksvcs.pubsrc.converter.FormatConverter formatConverter() {
-            return new com.java.barclaycardus.webhooksvcs.pubsrc.converter.FormatConverter();
+        converter.com.beewaxus.webhooksvcs.pubsrc.FormatConverter formatConverter() {
+            return new converter.com.beewaxus.webhooksvcs.pubsrc.FormatConverter();
         }
     }
 }
@@ -9814,13 +9814,13 @@ class EventControllerTest {
 package com.java.barclaycardus.webhooksvcs.pubsrc.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.java.barclaycardus.webhooksvcs.pubsrc.model.EventEnvelope;
-import com.java.barclaycardus.webhooksvcs.pubsrc.publisher.EventPublisher;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaDefinition;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaDetailResponse;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaReference;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaService;
-import com.java.barclaycardus.webhooksvcs.pubsrc.validation.JsonSchemaValidator;
+import model.com.beewaxus.webhooksvcs.pubsrc.EventEnvelope;
+import publisher.com.beewaxus.webhooksvcs.pubsrc.EventPublisher;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaDefinition;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaDetailResponse;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaReference;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaService;
+import validation.com.beewaxus.webhooksvcs.pubsrc.JsonSchemaValidator;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
@@ -10160,40 +10160,40 @@ class EventControllerTest {
         EventPublisher eventPublisher() {
             return new EventPublisher() {
                 @Override
-                public Mono<String> publish(com.java.barclaycardus.webhooksvcs.pubsrc.model.EventEnvelope envelope) {
+                public Mono<String> publish(model.com.beewaxus.webhooksvcs.pubsrc.EventEnvelope envelope) {
                     return Mono.just(envelope.eventId());
                 }
 
                 @Override
-                public Mono<String> publishAvro(com.java.barclaycardus.webhooksvcs.pubsrc.model.EventEnvelope envelope, String topicName, byte[] avroBytes) {
+                public Mono<String> publishAvro(model.com.beewaxus.webhooksvcs.pubsrc.EventEnvelope envelope, String topicName, byte[] avroBytes) {
                     return Mono.just(envelope.eventId());
                 }
             };
         }
 
         @Bean
-        com.java.barclaycardus.webhooksvcs.pubsrc.converter.AvroSerializer avroSerializer() {
-            return new com.java.barclaycardus.webhooksvcs.pubsrc.converter.AvroSerializer();
+        converter.com.beewaxus.webhooksvcs.pubsrc.AvroSerializer avroSerializer() {
+            return new converter.com.beewaxus.webhooksvcs.pubsrc.AvroSerializer();
         }
 
         @Bean
-        com.java.barclaycardus.webhooksvcs.pubsrc.validation.JsonSchemaValidator jsonSchemaValidator() {
-            return new com.java.barclaycardus.webhooksvcs.pubsrc.validation.JsonSchemaValidator();
+        validation.com.beewaxus.webhooksvcs.pubsrc.JsonSchemaValidator jsonSchemaValidator() {
+            return new validation.com.beewaxus.webhooksvcs.pubsrc.JsonSchemaValidator();
         }
 
         @Bean
-        com.java.barclaycardus.webhooksvcs.pubsrc.validation.XmlSchemaValidator xmlSchemaValidator() {
-            return new com.java.barclaycardus.webhooksvcs.pubsrc.validation.XmlSchemaValidator();
+        validation.com.beewaxus.webhooksvcs.pubsrc.XmlSchemaValidator xmlSchemaValidator() {
+            return new validation.com.beewaxus.webhooksvcs.pubsrc.XmlSchemaValidator();
         }
 
         @Bean
-        com.java.barclaycardus.webhooksvcs.pubsrc.validation.AvroSchemaValidator avroSchemaValidator() {
-            return new com.java.barclaycardus.webhooksvcs.pubsrc.validation.AvroSchemaValidator();
+        validation.com.beewaxus.webhooksvcs.pubsrc.AvroSchemaValidator avroSchemaValidator() {
+            return new validation.com.beewaxus.webhooksvcs.pubsrc.AvroSchemaValidator();
         }
 
         @Bean
-        com.java.barclaycardus.webhooksvcs.pubsrc.converter.FormatConverter formatConverter() {
-            return new com.java.barclaycardus.webhooksvcs.pubsrc.converter.FormatConverter();
+        converter.com.beewaxus.webhooksvcs.pubsrc.FormatConverter formatConverter() {
+            return new converter.com.beewaxus.webhooksvcs.pubsrc.FormatConverter();
         }
     }
 }
@@ -10286,13 +10286,13 @@ The XSD schema doesn't match the XML payload structure. The Postman XML uses `<e
 package com.java.barclaycardus.webhooksvcs.pubsrc.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.java.barclaycardus.webhooksvcs.pubsrc.model.EventEnvelope;
-import com.java.barclaycardus.webhooksvcs.pubsrc.publisher.EventPublisher;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaDefinition;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaDetailResponse;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaReference;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaService;
-import com.java.barclaycardus.webhooksvcs.pubsrc.validation.JsonSchemaValidator;
+import model.com.beewaxus.webhooksvcs.pubsrc.EventEnvelope;
+import publisher.com.beewaxus.webhooksvcs.pubsrc.EventPublisher;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaDefinition;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaDetailResponse;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaReference;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaService;
+import validation.com.beewaxus.webhooksvcs.pubsrc.JsonSchemaValidator;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
@@ -10662,40 +10662,40 @@ class EventControllerTest {
         EventPublisher eventPublisher() {
             return new EventPublisher() {
                 @Override
-                public Mono<String> publish(com.java.barclaycardus.webhooksvcs.pubsrc.model.EventEnvelope envelope) {
+                public Mono<String> publish(model.com.beewaxus.webhooksvcs.pubsrc.EventEnvelope envelope) {
                     return Mono.just(envelope.eventId());
                 }
 
                 @Override
-                public Mono<String> publishAvro(com.java.barclaycardus.webhooksvcs.pubsrc.model.EventEnvelope envelope, String topicName, byte[] avroBytes) {
+                public Mono<String> publishAvro(model.com.beewaxus.webhooksvcs.pubsrc.EventEnvelope envelope, String topicName, byte[] avroBytes) {
                     return Mono.just(envelope.eventId());
                 }
             };
         }
 
         @Bean
-        com.java.barclaycardus.webhooksvcs.pubsrc.converter.AvroSerializer avroSerializer() {
-            return new com.java.barclaycardus.webhooksvcs.pubsrc.converter.AvroSerializer();
+        converter.com.beewaxus.webhooksvcs.pubsrc.AvroSerializer avroSerializer() {
+            return new converter.com.beewaxus.webhooksvcs.pubsrc.AvroSerializer();
         }
 
         @Bean
-        com.java.barclaycardus.webhooksvcs.pubsrc.validation.JsonSchemaValidator jsonSchemaValidator() {
-            return new com.java.barclaycardus.webhooksvcs.pubsrc.validation.JsonSchemaValidator();
+        validation.com.beewaxus.webhooksvcs.pubsrc.JsonSchemaValidator jsonSchemaValidator() {
+            return new validation.com.beewaxus.webhooksvcs.pubsrc.JsonSchemaValidator();
         }
 
         @Bean
-        com.java.barclaycardus.webhooksvcs.pubsrc.validation.XmlSchemaValidator xmlSchemaValidator() {
-            return new com.java.barclaycardus.webhooksvcs.pubsrc.validation.XmlSchemaValidator();
+        validation.com.beewaxus.webhooksvcs.pubsrc.XmlSchemaValidator xmlSchemaValidator() {
+            return new validation.com.beewaxus.webhooksvcs.pubsrc.XmlSchemaValidator();
         }
 
         @Bean
-        com.java.barclaycardus.webhooksvcs.pubsrc.validation.AvroSchemaValidator avroSchemaValidator() {
-            return new com.java.barclaycardus.webhooksvcs.pubsrc.validation.AvroSchemaValidator();
+        validation.com.beewaxus.webhooksvcs.pubsrc.AvroSchemaValidator avroSchemaValidator() {
+            return new validation.com.beewaxus.webhooksvcs.pubsrc.AvroSchemaValidator();
         }
 
         @Bean
-        com.java.barclaycardus.webhooksvcs.pubsrc.converter.FormatConverter formatConverter() {
-            return new com.java.barclaycardus.webhooksvcs.pubsrc.converter.FormatConverter();
+        converter.com.beewaxus.webhooksvcs.pubsrc.FormatConverter formatConverter() {
+            return new converter.com.beewaxus.webhooksvcs.pubsrc.FormatConverter();
         }
     }
 }
@@ -10706,13 +10706,13 @@ class EventControllerTest {
 package com.java.barclaycardus.webhooksvcs.pubsrc.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.java.barclaycardus.webhooksvcs.pubsrc.model.EventEnvelope;
-import com.java.barclaycardus.webhooksvcs.pubsrc.publisher.EventPublisher;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaDefinition;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaDetailResponse;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaReference;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaService;
-import com.java.barclaycardus.webhooksvcs.pubsrc.validation.JsonSchemaValidator;
+import model.com.beewaxus.webhooksvcs.pubsrc.EventEnvelope;
+import publisher.com.beewaxus.webhooksvcs.pubsrc.EventPublisher;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaDefinition;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaDetailResponse;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaReference;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaService;
+import validation.com.beewaxus.webhooksvcs.pubsrc.JsonSchemaValidator;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
@@ -11083,40 +11083,40 @@ class EventControllerTest {
         EventPublisher eventPublisher() {
             return new EventPublisher() {
                 @Override
-                public Mono<String> publish(com.java.barclaycardus.webhooksvcs.pubsrc.model.EventEnvelope envelope) {
+                public Mono<String> publish(model.com.beewaxus.webhooksvcs.pubsrc.EventEnvelope envelope) {
                     return Mono.just(envelope.eventId());
                 }
 
                 @Override
-                public Mono<String> publishAvro(com.java.barclaycardus.webhooksvcs.pubsrc.model.EventEnvelope envelope, String topicName, byte[] avroBytes) {
+                public Mono<String> publishAvro(model.com.beewaxus.webhooksvcs.pubsrc.EventEnvelope envelope, String topicName, byte[] avroBytes) {
                     return Mono.just(envelope.eventId());
                 }
             };
         }
 
         @Bean
-        com.java.barclaycardus.webhooksvcs.pubsrc.converter.AvroSerializer avroSerializer() {
-            return new com.java.barclaycardus.webhooksvcs.pubsrc.converter.AvroSerializer();
+        converter.com.beewaxus.webhooksvcs.pubsrc.AvroSerializer avroSerializer() {
+            return new converter.com.beewaxus.webhooksvcs.pubsrc.AvroSerializer();
         }
 
         @Bean
-        com.java.barclaycardus.webhooksvcs.pubsrc.validation.JsonSchemaValidator jsonSchemaValidator() {
-            return new com.java.barclaycardus.webhooksvcs.pubsrc.validation.JsonSchemaValidator();
+        validation.com.beewaxus.webhooksvcs.pubsrc.JsonSchemaValidator jsonSchemaValidator() {
+            return new validation.com.beewaxus.webhooksvcs.pubsrc.JsonSchemaValidator();
         }
 
         @Bean
-        com.java.barclaycardus.webhooksvcs.pubsrc.validation.XmlSchemaValidator xmlSchemaValidator() {
-            return new com.java.barclaycardus.webhooksvcs.pubsrc.validation.XmlSchemaValidator();
+        validation.com.beewaxus.webhooksvcs.pubsrc.XmlSchemaValidator xmlSchemaValidator() {
+            return new validation.com.beewaxus.webhooksvcs.pubsrc.XmlSchemaValidator();
         }
 
         @Bean
-        com.java.barclaycardus.webhooksvcs.pubsrc.validation.AvroSchemaValidator avroSchemaValidator() {
-            return new com.java.barclaycardus.webhooksvcs.pubsrc.validation.AvroSchemaValidator();
+        validation.com.beewaxus.webhooksvcs.pubsrc.AvroSchemaValidator avroSchemaValidator() {
+            return new validation.com.beewaxus.webhooksvcs.pubsrc.AvroSchemaValidator();
         }
 
         @Bean
-        com.java.barclaycardus.webhooksvcs.pubsrc.converter.FormatConverter formatConverter() {
-            return new com.java.barclaycardus.webhooksvcs.pubsrc.converter.FormatConverter();
+        converter.com.beewaxus.webhooksvcs.pubsrc.FormatConverter formatConverter() {
+            return new converter.com.beewaxus.webhooksvcs.pubsrc.FormatConverter();
         }
     }
 }
@@ -11130,7 +11130,7 @@ Improving `XmlSchemaValidator` to handle edge cases and add better error handlin
 ```java
 package com.java.barclaycardus.webhooksvcs.pubsrc.validation;
 
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaDefinition;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaDefinition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -11406,7 +11406,7 @@ Reassigning `xmlSchema` and `xmlPayload` inside the lambda makes them non-final.
 ```java
 package com.java.barclaycardus.webhooksvcs.pubsrc.validation;
 
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaDefinition;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaDefinition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -11510,7 +11510,7 @@ org.apache.avro.AvroTypeException: Expected double. Got VALUE_STRING
 
 Error has been observed at the following site(s):
 
-	*__checkpoint ⇢ Handler com.java.barclaycardus.webhooksvcs.pubsrc.controller.EventController#publishEventBySchemaId(String, String, String, String, Map) [DispatcherHandler]
+	*__checkpoint ⇢ Handler controller.com.beewaxus.webhooksvcs.pubsrc.EventController#publishEventBySchemaId(String, String, String, String, Map) [DispatcherHandler]
 
 	*__checkpoint ⇢ HTTP POST "/events/schema_id/SCHEMA_0001" [ExceptionHandlingWebHandler]
 
@@ -11535,18 +11535,18 @@ package com.java.barclaycardus.webhooksvcs.pubsrc.controller;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.java.barclaycardus.webhooksvcs.pubsrc.converter.AvroSerializer;
-import com.java.barclaycardus.webhooksvcs.pubsrc.converter.FormatConverter;
-import com.java.barclaycardus.webhooksvcs.pubsrc.model.EventEnvelope;
-import com.java.barclaycardus.webhooksvcs.pubsrc.publisher.EventPublisher;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaDefinition;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaDetailResponse;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaFormat;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaReference;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaService;
-import com.java.barclaycardus.webhooksvcs.pubsrc.validation.AvroSchemaValidator;
-import com.java.barclaycardus.webhooksvcs.pubsrc.validation.JsonSchemaValidator;
-import com.java.barclaycardus.webhooksvcs.pubsrc.validation.XmlSchemaValidator;
+import converter.com.beewaxus.webhooksvcs.pubsrc.AvroSerializer;
+import converter.com.beewaxus.webhooksvcs.pubsrc.FormatConverter;
+import model.com.beewaxus.webhooksvcs.pubsrc.EventEnvelope;
+import publisher.com.beewaxus.webhooksvcs.pubsrc.EventPublisher;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaDefinition;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaDetailResponse;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaFormat;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaReference;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaService;
+import validation.com.beewaxus.webhooksvcs.pubsrc.AvroSchemaValidator;
+import validation.com.beewaxus.webhooksvcs.pubsrc.JsonSchemaValidator;
+import validation.com.beewaxus.webhooksvcs.pubsrc.XmlSchemaValidator;
 import jakarta.validation.constraints.NotBlank;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericDatumReader;
@@ -11899,18 +11899,18 @@ package com.java.barclaycardus.webhooksvcs.pubsrc.controller;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.java.barclaycardus.webhooksvcs.pubsrc.converter.AvroSerializer;
-import com.java.barclaycardus.webhooksvcs.pubsrc.converter.FormatConverter;
-import com.java.barclaycardus.webhooksvcs.pubsrc.model.EventEnvelope;
-import com.java.barclaycardus.webhooksvcs.pubsrc.publisher.EventPublisher;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaDefinition;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaDetailResponse;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaFormat;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaReference;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaService;
-import com.java.barclaycardus.webhooksvcs.pubsrc.validation.AvroSchemaValidator;
-import com.java.barclaycardus.webhooksvcs.pubsrc.validation.JsonSchemaValidator;
-import com.java.barclaycardus.webhooksvcs.pubsrc.validation.XmlSchemaValidator;
+import converter.com.beewaxus.webhooksvcs.pubsrc.AvroSerializer;
+import converter.com.beewaxus.webhooksvcs.pubsrc.FormatConverter;
+import model.com.beewaxus.webhooksvcs.pubsrc.EventEnvelope;
+import publisher.com.beewaxus.webhooksvcs.pubsrc.EventPublisher;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaDefinition;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaDetailResponse;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaFormat;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaReference;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaService;
+import validation.com.beewaxus.webhooksvcs.pubsrc.AvroSchemaValidator;
+import validation.com.beewaxus.webhooksvcs.pubsrc.JsonSchemaValidator;
+import validation.com.beewaxus.webhooksvcs.pubsrc.XmlSchemaValidator;
 import jakarta.validation.constraints.NotBlank;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericDatumReader;
@@ -12221,18 +12221,18 @@ package com.java.barclaycardus.webhooksvcs.pubsrc.controller;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.java.barclaycardus.webhooksvcs.pubsrc.converter.AvroSerializer;
-import com.java.barclaycardus.webhooksvcs.pubsrc.converter.FormatConverter;
-import com.java.barclaycardus.webhooksvcs.pubsrc.model.EventEnvelope;
-import com.java.barclaycardus.webhooksvcs.pubsrc.publisher.EventPublisher;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaDefinition;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaDetailResponse;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaFormat;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaReference;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaService;
-import com.java.barclaycardus.webhooksvcs.pubsrc.validation.AvroSchemaValidator;
-import com.java.barclaycardus.webhooksvcs.pubsrc.validation.JsonSchemaValidator;
-import com.java.barclaycardus.webhooksvcs.pubsrc.validation.XmlSchemaValidator;
+import converter.com.beewaxus.webhooksvcs.pubsrc.AvroSerializer;
+import converter.com.beewaxus.webhooksvcs.pubsrc.FormatConverter;
+import model.com.beewaxus.webhooksvcs.pubsrc.EventEnvelope;
+import publisher.com.beewaxus.webhooksvcs.pubsrc.EventPublisher;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaDefinition;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaDetailResponse;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaFormat;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaReference;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaService;
+import validation.com.beewaxus.webhooksvcs.pubsrc.AvroSchemaValidator;
+import validation.com.beewaxus.webhooksvcs.pubsrc.JsonSchemaValidator;
+import validation.com.beewaxus.webhooksvcs.pubsrc.XmlSchemaValidator;
 import jakarta.validation.constraints.NotBlank;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericDatumReader;
@@ -13030,8 +13030,8 @@ package com.java.barclaycardus.webhooksvcs.pubsrc.publisher;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.java.barclaycardus.webhooksvcs.pubsrc.config.WebhooksProperties;
-import com.java.barclaycardus.webhooksvcs.pubsrc.model.EventEnvelope;
+import config.com.beewaxus.webhooksvcs.pubsrc.WebhooksProperties;
+import model.com.beewaxus.webhooksvcs.pubsrc.EventEnvelope;
 import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.kafka.common.errors.TimeoutException;
 import org.slf4j.Logger;
@@ -13119,8 +13119,8 @@ package com.java.barclaycardus.webhooksvcs.pubsrc.publisher;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.java.barclaycardus.webhooksvcs.pubsrc.config.WebhooksProperties;
-import com.java.barclaycardus.webhooksvcs.pubsrc.model.EventEnvelope;
+import config.com.beewaxus.webhooksvcs.pubsrc.WebhooksProperties;
+import model.com.beewaxus.webhooksvcs.pubsrc.EventEnvelope;
 import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.kafka.common.errors.TimeoutException;
 import org.slf4j.Logger;
@@ -13222,8 +13222,8 @@ package com.java.barclaycardus.webhooksvcs.pubsrc.publisher;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.java.barclaycardus.webhooksvcs.pubsrc.config.WebhooksProperties;
-import com.java.barclaycardus.webhooksvcs.pubsrc.model.EventEnvelope;
+import config.com.beewaxus.webhooksvcs.pubsrc.WebhooksProperties;
+import model.com.beewaxus.webhooksvcs.pubsrc.EventEnvelope;
 import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.kafka.common.errors.TimeoutException;
 import org.slf4j.Logger;
@@ -13365,8 +13365,8 @@ package com.java.barclaycardus.webhooksvcs.pubsrc.publisher;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.java.barclaycardus.webhooksvcs.pubsrc.config.WebhooksProperties;
-import com.java.barclaycardus.webhooksvcs.pubsrc.model.EventEnvelope;
+import config.com.beewaxus.webhooksvcs.pubsrc.WebhooksProperties;
+import model.com.beewaxus.webhooksvcs.pubsrc.EventEnvelope;
 import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.kafka.common.errors.TimeoutException;
 import org.slf4j.Logger;
@@ -13483,8 +13483,8 @@ package com.java.barclaycardus.webhooksvcs.pubsrc.publisher;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.java.barclaycardus.webhooksvcs.pubsrc.config.WebhooksProperties;
-import com.java.barclaycardus.webhooksvcs.pubsrc.model.EventEnvelope;
+import config.com.beewaxus.webhooksvcs.pubsrc.WebhooksProperties;
+import model.com.beewaxus.webhooksvcs.pubsrc.EventEnvelope;
 import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.kafka.common.errors.TimeoutException;
 import org.slf4j.Logger;
@@ -13601,8 +13601,8 @@ package com.java.barclaycardus.webhooksvcs.pubsrc.publisher;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.java.barclaycardus.webhooksvcs.pubsrc.config.WebhooksProperties;
-import com.java.barclaycardus.webhooksvcs.pubsrc.model.EventEnvelope;
+import config.com.beewaxus.webhooksvcs.pubsrc.WebhooksProperties;
+import model.com.beewaxus.webhooksvcs.pubsrc.EventEnvelope;
 import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.kafka.common.errors.TimeoutException;
 import org.slf4j.Logger;
@@ -13719,8 +13719,8 @@ package com.java.barclaycardus.webhooksvcs.pubsrc.publisher;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.java.barclaycardus.webhooksvcs.pubsrc.config.WebhooksProperties;
-import com.java.barclaycardus.webhooksvcs.pubsrc.model.EventEnvelope;
+import config.com.beewaxus.webhooksvcs.pubsrc.WebhooksProperties;
+import model.com.beewaxus.webhooksvcs.pubsrc.EventEnvelope;
 import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.kafka.common.errors.TimeoutException;
 import org.slf4j.Logger;
@@ -13837,8 +13837,8 @@ package com.java.barclaycardus.webhooksvcs.pubsrc.publisher;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.java.barclaycardus.webhooksvcs.pubsrc.config.WebhooksProperties;
-import com.java.barclaycardus.webhooksvcs.pubsrc.model.EventEnvelope;
+import config.com.beewaxus.webhooksvcs.pubsrc.WebhooksProperties;
+import model.com.beewaxus.webhooksvcs.pubsrc.EventEnvelope;
 import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.kafka.common.errors.TimeoutException;
 import org.slf4j.Logger;
@@ -13959,19 +13959,19 @@ package com.java.barclaycardus.webhooksvcs.pubsrc.controller;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.java.barclaycardus.webhooksvcs.pubsrc.converter.AvroSerializer;
-import com.java.barclaycardus.webhooksvcs.pubsrc.converter.FormatConverter;
-import com.java.barclaycardus.webhooksvcs.pubsrc.model.EventEnvelope;
-import com.java.barclaycardus.webhooksvcs.pubsrc.publisher.EventPublisher;
-import com.java.barclaycardus.webhooksvcs.pubsrc.publisher.KafkaPublishException;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaDefinition;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaDetailResponse;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaFormat;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaReference;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaService;
-import com.java.barclaycardus.webhooksvcs.pubsrc.validation.AvroSchemaValidator;
-import com.java.barclaycardus.webhooksvcs.pubsrc.validation.JsonSchemaValidator;
-import com.java.barclaycardus.webhooksvcs.pubsrc.validation.XmlSchemaValidator;
+import converter.com.beewaxus.webhooksvcs.pubsrc.AvroSerializer;
+import converter.com.beewaxus.webhooksvcs.pubsrc.FormatConverter;
+import model.com.beewaxus.webhooksvcs.pubsrc.EventEnvelope;
+import publisher.com.beewaxus.webhooksvcs.pubsrc.EventPublisher;
+import publisher.com.beewaxus.webhooksvcs.pubsrc.KafkaPublishException;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaDefinition;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaDetailResponse;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaFormat;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaReference;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaService;
+import validation.com.beewaxus.webhooksvcs.pubsrc.AvroSchemaValidator;
+import validation.com.beewaxus.webhooksvcs.pubsrc.JsonSchemaValidator;
+import validation.com.beewaxus.webhooksvcs.pubsrc.XmlSchemaValidator;
 import jakarta.validation.constraints.NotBlank;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericDatumReader;
@@ -14285,19 +14285,19 @@ package com.java.barclaycardus.webhooksvcs.pubsrc.controller;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.java.barclaycardus.webhooksvcs.pubsrc.converter.AvroSerializer;
-import com.java.barclaycardus.webhooksvcs.pubsrc.converter.FormatConverter;
-import com.java.barclaycardus.webhooksvcs.pubsrc.model.EventEnvelope;
-import com.java.barclaycardus.webhooksvcs.pubsrc.publisher.EventPublisher;
-import com.java.barclaycardus.webhooksvcs.pubsrc.publisher.KafkaPublishException;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaDefinition;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaDetailResponse;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaFormat;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaReference;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaService;
-import com.java.barclaycardus.webhooksvcs.pubsrc.validation.AvroSchemaValidator;
-import com.java.barclaycardus.webhooksvcs.pubsrc.validation.JsonSchemaValidator;
-import com.java.barclaycardus.webhooksvcs.pubsrc.validation.XmlSchemaValidator;
+import converter.com.beewaxus.webhooksvcs.pubsrc.AvroSerializer;
+import converter.com.beewaxus.webhooksvcs.pubsrc.FormatConverter;
+import model.com.beewaxus.webhooksvcs.pubsrc.EventEnvelope;
+import publisher.com.beewaxus.webhooksvcs.pubsrc.EventPublisher;
+import publisher.com.beewaxus.webhooksvcs.pubsrc.KafkaPublishException;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaDefinition;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaDetailResponse;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaFormat;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaReference;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaService;
+import validation.com.beewaxus.webhooksvcs.pubsrc.AvroSchemaValidator;
+import validation.com.beewaxus.webhooksvcs.pubsrc.JsonSchemaValidator;
+import validation.com.beewaxus.webhooksvcs.pubsrc.XmlSchemaValidator;
 import jakarta.validation.constraints.NotBlank;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericDatumReader;
@@ -14612,19 +14612,19 @@ package com.java.barclaycardus.webhooksvcs.pubsrc.controller;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.java.barclaycardus.webhooksvcs.pubsrc.converter.AvroSerializer;
-import com.java.barclaycardus.webhooksvcs.pubsrc.converter.FormatConverter;
-import com.java.barclaycardus.webhooksvcs.pubsrc.model.EventEnvelope;
-import com.java.barclaycardus.webhooksvcs.pubsrc.publisher.EventPublisher;
-import com.java.barclaycardus.webhooksvcs.pubsrc.publisher.KafkaPublishException;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaDefinition;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaDetailResponse;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaFormat;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaReference;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaService;
-import com.java.barclaycardus.webhooksvcs.pubsrc.validation.AvroSchemaValidator;
-import com.java.barclaycardus.webhooksvcs.pubsrc.validation.JsonSchemaValidator;
-import com.java.barclaycardus.webhooksvcs.pubsrc.validation.XmlSchemaValidator;
+import converter.com.beewaxus.webhooksvcs.pubsrc.AvroSerializer;
+import converter.com.beewaxus.webhooksvcs.pubsrc.FormatConverter;
+import model.com.beewaxus.webhooksvcs.pubsrc.EventEnvelope;
+import publisher.com.beewaxus.webhooksvcs.pubsrc.EventPublisher;
+import publisher.com.beewaxus.webhooksvcs.pubsrc.KafkaPublishException;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaDefinition;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaDetailResponse;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaFormat;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaReference;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaService;
+import validation.com.beewaxus.webhooksvcs.pubsrc.AvroSchemaValidator;
+import validation.com.beewaxus.webhooksvcs.pubsrc.JsonSchemaValidator;
+import validation.com.beewaxus.webhooksvcs.pubsrc.XmlSchemaValidator;
 import jakarta.validation.constraints.NotBlank;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericDatumReader;
@@ -14945,19 +14945,19 @@ package com.java.barclaycardus.webhooksvcs.pubsrc.controller;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.java.barclaycardus.webhooksvcs.pubsrc.converter.AvroSerializer;
-import com.java.barclaycardus.webhooksvcs.pubsrc.converter.FormatConverter;
-import com.java.barclaycardus.webhooksvcs.pubsrc.model.EventEnvelope;
-import com.java.barclaycardus.webhooksvcs.pubsrc.publisher.EventPublisher;
-import com.java.barclaycardus.webhooksvcs.pubsrc.publisher.KafkaPublishException;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaDefinition;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaDetailResponse;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaFormat;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaReference;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaService;
-import com.java.barclaycardus.webhooksvcs.pubsrc.validation.AvroSchemaValidator;
-import com.java.barclaycardus.webhooksvcs.pubsrc.validation.JsonSchemaValidator;
-import com.java.barclaycardus.webhooksvcs.pubsrc.validation.XmlSchemaValidator;
+import converter.com.beewaxus.webhooksvcs.pubsrc.AvroSerializer;
+import converter.com.beewaxus.webhooksvcs.pubsrc.FormatConverter;
+import model.com.beewaxus.webhooksvcs.pubsrc.EventEnvelope;
+import publisher.com.beewaxus.webhooksvcs.pubsrc.EventPublisher;
+import publisher.com.beewaxus.webhooksvcs.pubsrc.KafkaPublishException;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaDefinition;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaDetailResponse;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaFormat;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaReference;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaService;
+import validation.com.beewaxus.webhooksvcs.pubsrc.AvroSchemaValidator;
+import validation.com.beewaxus.webhooksvcs.pubsrc.JsonSchemaValidator;
+import validation.com.beewaxus.webhooksvcs.pubsrc.XmlSchemaValidator;
 import jakarta.validation.constraints.NotBlank;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericDatumReader;
@@ -15420,7 +15420,7 @@ public class DynamoDbException extends RuntimeException {
 ```java
 package com.java.barclaycardus.webhooksvcs.pubsrc.schema;
 
-import com.java.barclaycardus.webhooksvcs.pubsrc.config.WebhooksProperties;
+import config.com.beewaxus.webhooksvcs.pubsrc.WebhooksProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -15659,7 +15659,7 @@ public class DynamoSchemaService implements SchemaService {
 ```java
 package com.java.barclaycardus.webhooksvcs.pubsrc.schema;
 
-import com.java.barclaycardus.webhooksvcs.pubsrc.config.WebhooksProperties;
+import config.com.beewaxus.webhooksvcs.pubsrc.WebhooksProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -15912,7 +15912,7 @@ public class DynamoSchemaService implements SchemaService {
 ```java
 package com.java.barclaycardus.webhooksvcs.pubsrc.schema;
 
-import com.java.barclaycardus.webhooksvcs.pubsrc.config.WebhooksProperties;
+import config.com.beewaxus.webhooksvcs.pubsrc.WebhooksProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -16181,7 +16181,7 @@ public class DynamoSchemaService implements SchemaService {
 ```java
 package com.java.barclaycardus.webhooksvcs.pubsrc.schema;
 
-import com.java.barclaycardus.webhooksvcs.pubsrc.config.WebhooksProperties;
+import config.com.beewaxus.webhooksvcs.pubsrc.WebhooksProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -16466,20 +16466,20 @@ package com.java.barclaycardus.webhooksvcs.pubsrc.controller;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.java.barclaycardus.webhooksvcs.pubsrc.converter.AvroSerializer;
-import com.java.barclaycardus.webhooksvcs.pubsrc.converter.FormatConverter;
-import com.java.barclaycardus.webhooksvcs.pubsrc.model.EventEnvelope;
-import com.java.barclaycardus.webhooksvcs.pubsrc.publisher.EventPublisher;
-import com.java.barclaycardus.webhooksvcs.pubsrc.publisher.KafkaPublishException;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.DynamoDbException;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaDefinition;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaDetailResponse;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaFormat;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaReference;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaService;
-import com.java.barclaycardus.webhooksvcs.pubsrc.validation.AvroSchemaValidator;
-import com.java.barclaycardus.webhooksvcs.pubsrc.validation.JsonSchemaValidator;
-import com.java.barclaycardus.webhooksvcs.pubsrc.validation.XmlSchemaValidator;
+import converter.com.beewaxus.webhooksvcs.pubsrc.AvroSerializer;
+import converter.com.beewaxus.webhooksvcs.pubsrc.FormatConverter;
+import model.com.beewaxus.webhooksvcs.pubsrc.EventEnvelope;
+import publisher.com.beewaxus.webhooksvcs.pubsrc.EventPublisher;
+import publisher.com.beewaxus.webhooksvcs.pubsrc.KafkaPublishException;
+import schema.com.beewaxus.webhooksvcs.pubsrc.DynamoDbException;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaDefinition;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaDetailResponse;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaFormat;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaReference;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaService;
+import validation.com.beewaxus.webhooksvcs.pubsrc.AvroSchemaValidator;
+import validation.com.beewaxus.webhooksvcs.pubsrc.JsonSchemaValidator;
+import validation.com.beewaxus.webhooksvcs.pubsrc.XmlSchemaValidator;
 import jakarta.validation.constraints.NotBlank;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericDatumReader;
@@ -16798,20 +16798,20 @@ package com.java.barclaycardus.webhooksvcs.pubsrc.controller;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.java.barclaycardus.webhooksvcs.pubsrc.converter.AvroSerializer;
-import com.java.barclaycardus.webhooksvcs.pubsrc.converter.FormatConverter;
-import com.java.barclaycardus.webhooksvcs.pubsrc.model.EventEnvelope;
-import com.java.barclaycardus.webhooksvcs.pubsrc.publisher.EventPublisher;
-import com.java.barclaycardus.webhooksvcs.pubsrc.publisher.KafkaPublishException;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.DynamoDbException;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaDefinition;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaDetailResponse;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaFormat;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaReference;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaService;
-import com.java.barclaycardus.webhooksvcs.pubsrc.validation.AvroSchemaValidator;
-import com.java.barclaycardus.webhooksvcs.pubsrc.validation.JsonSchemaValidator;
-import com.java.barclaycardus.webhooksvcs.pubsrc.validation.XmlSchemaValidator;
+import converter.com.beewaxus.webhooksvcs.pubsrc.AvroSerializer;
+import converter.com.beewaxus.webhooksvcs.pubsrc.FormatConverter;
+import model.com.beewaxus.webhooksvcs.pubsrc.EventEnvelope;
+import publisher.com.beewaxus.webhooksvcs.pubsrc.EventPublisher;
+import publisher.com.beewaxus.webhooksvcs.pubsrc.KafkaPublishException;
+import schema.com.beewaxus.webhooksvcs.pubsrc.DynamoDbException;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaDefinition;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaDetailResponse;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaFormat;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaReference;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaService;
+import validation.com.beewaxus.webhooksvcs.pubsrc.AvroSchemaValidator;
+import validation.com.beewaxus.webhooksvcs.pubsrc.JsonSchemaValidator;
+import validation.com.beewaxus.webhooksvcs.pubsrc.XmlSchemaValidator;
 import jakarta.validation.constraints.NotBlank;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericDatumReader;
@@ -17131,20 +17131,20 @@ package com.java.barclaycardus.webhooksvcs.pubsrc.controller;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.java.barclaycardus.webhooksvcs.pubsrc.converter.AvroSerializer;
-import com.java.barclaycardus.webhooksvcs.pubsrc.converter.FormatConverter;
-import com.java.barclaycardus.webhooksvcs.pubsrc.model.EventEnvelope;
-import com.java.barclaycardus.webhooksvcs.pubsrc.publisher.EventPublisher;
-import com.java.barclaycardus.webhooksvcs.pubsrc.publisher.KafkaPublishException;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.DynamoDbException;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaDefinition;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaDetailResponse;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaFormat;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaReference;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaService;
-import com.java.barclaycardus.webhooksvcs.pubsrc.validation.AvroSchemaValidator;
-import com.java.barclaycardus.webhooksvcs.pubsrc.validation.JsonSchemaValidator;
-import com.java.barclaycardus.webhooksvcs.pubsrc.validation.XmlSchemaValidator;
+import converter.com.beewaxus.webhooksvcs.pubsrc.AvroSerializer;
+import converter.com.beewaxus.webhooksvcs.pubsrc.FormatConverter;
+import model.com.beewaxus.webhooksvcs.pubsrc.EventEnvelope;
+import publisher.com.beewaxus.webhooksvcs.pubsrc.EventPublisher;
+import publisher.com.beewaxus.webhooksvcs.pubsrc.KafkaPublishException;
+import schema.com.beewaxus.webhooksvcs.pubsrc.DynamoDbException;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaDefinition;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaDetailResponse;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaFormat;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaReference;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaService;
+import validation.com.beewaxus.webhooksvcs.pubsrc.AvroSchemaValidator;
+import validation.com.beewaxus.webhooksvcs.pubsrc.JsonSchemaValidator;
+import validation.com.beewaxus.webhooksvcs.pubsrc.XmlSchemaValidator;
 import jakarta.validation.constraints.NotBlank;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericDatumReader;
@@ -17472,20 +17472,20 @@ package com.java.barclaycardus.webhooksvcs.pubsrc.controller;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.java.barclaycardus.webhooksvcs.pubsrc.converter.AvroSerializer;
-import com.java.barclaycardus.webhooksvcs.pubsrc.converter.FormatConverter;
-import com.java.barclaycardus.webhooksvcs.pubsrc.model.EventEnvelope;
-import com.java.barclaycardus.webhooksvcs.pubsrc.publisher.EventPublisher;
-import com.java.barclaycardus.webhooksvcs.pubsrc.publisher.KafkaPublishException;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.DynamoDbException;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaDefinition;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaDetailResponse;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaFormat;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaReference;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaService;
-import com.java.barclaycardus.webhooksvcs.pubsrc.validation.AvroSchemaValidator;
-import com.java.barclaycardus.webhooksvcs.pubsrc.validation.JsonSchemaValidator;
-import com.java.barclaycardus.webhooksvcs.pubsrc.validation.XmlSchemaValidator;
+import converter.com.beewaxus.webhooksvcs.pubsrc.AvroSerializer;
+import converter.com.beewaxus.webhooksvcs.pubsrc.FormatConverter;
+import model.com.beewaxus.webhooksvcs.pubsrc.EventEnvelope;
+import publisher.com.beewaxus.webhooksvcs.pubsrc.EventPublisher;
+import publisher.com.beewaxus.webhooksvcs.pubsrc.KafkaPublishException;
+import schema.com.beewaxus.webhooksvcs.pubsrc.DynamoDbException;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaDefinition;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaDetailResponse;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaFormat;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaReference;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaService;
+import validation.com.beewaxus.webhooksvcs.pubsrc.AvroSchemaValidator;
+import validation.com.beewaxus.webhooksvcs.pubsrc.JsonSchemaValidator;
+import validation.com.beewaxus.webhooksvcs.pubsrc.XmlSchemaValidator;
 import jakarta.validation.constraints.NotBlank;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericDatumReader;
@@ -17823,11 +17823,11 @@ Adding error handling to SchemaController:
 ```java
 package com.java.barclaycardus.webhooksvcs.pubsrc.controller;
 
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.DynamoDbException;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaDefinition;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaDetailResponse;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaReference;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaService;
+import schema.com.beewaxus.webhooksvcs.pubsrc.DynamoDbException;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaDefinition;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaDetailResponse;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaReference;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -17880,11 +17880,11 @@ public class SchemaController {
 ```java
 package com.java.barclaycardus.webhooksvcs.pubsrc.controller;
 
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.DynamoDbException;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaDefinition;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaDetailResponse;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaReference;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaService;
+import schema.com.beewaxus.webhooksvcs.pubsrc.DynamoDbException;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaDefinition;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaDetailResponse;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaReference;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -17943,11 +17943,11 @@ public class SchemaController {
 ```java
 package com.java.barclaycardus.webhooksvcs.pubsrc.controller;
 
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.DynamoDbException;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaDefinition;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaDetailResponse;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaReference;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaService;
+import schema.com.beewaxus.webhooksvcs.pubsrc.DynamoDbException;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaDefinition;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaDetailResponse;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaReference;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -18012,11 +18012,11 @@ public class SchemaController {
 ```java
 package com.java.barclaycardus.webhooksvcs.pubsrc.controller;
 
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.DynamoDbException;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaDefinition;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaDetailResponse;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaReference;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaService;
+import schema.com.beewaxus.webhooksvcs.pubsrc.DynamoDbException;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaDefinition;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaDetailResponse;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaReference;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -18344,8 +18344,8 @@ package com.java.barclaycardus.webhooksvcs.pubsrc.publisher;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.java.barclaycardus.webhooksvcs.pubsrc.config.WebhooksProperties;
-import com.java.barclaycardus.webhooksvcs.pubsrc.model.EventEnvelope;
+import config.com.beewaxus.webhooksvcs.pubsrc.WebhooksProperties;
+import model.com.beewaxus.webhooksvcs.pubsrc.EventEnvelope;
 import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.kafka.common.errors.TimeoutException;
 import org.slf4j.Logger;
@@ -18466,8 +18466,8 @@ package com.java.barclaycardus.webhooksvcs.pubsrc.publisher;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.java.barclaycardus.webhooksvcs.pubsrc.config.WebhooksProperties;
-import com.java.barclaycardus.webhooksvcs.pubsrc.model.EventEnvelope;
+import config.com.beewaxus.webhooksvcs.pubsrc.WebhooksProperties;
+import model.com.beewaxus.webhooksvcs.pubsrc.EventEnvelope;
 import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.kafka.common.errors.TimeoutException;
 import org.slf4j.Logger;
@@ -18678,8 +18678,8 @@ package com.java.barclaycardus.webhooksvcs.pubsrc.publisher;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.java.barclaycardus.webhooksvcs.pubsrc.config.WebhooksProperties;
-import com.java.barclaycardus.webhooksvcs.pubsrc.model.EventEnvelope;
+import config.com.beewaxus.webhooksvcs.pubsrc.WebhooksProperties;
+import model.com.beewaxus.webhooksvcs.pubsrc.EventEnvelope;
 import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.kafka.common.errors.TimeoutException;
 import org.slf4j.Logger;
@@ -18804,8 +18804,8 @@ package com.java.barclaycardus.webhooksvcs.pubsrc.publisher;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.java.barclaycardus.webhooksvcs.pubsrc.config.WebhooksProperties;
-import com.java.barclaycardus.webhooksvcs.pubsrc.model.EventEnvelope;
+import config.com.beewaxus.webhooksvcs.pubsrc.WebhooksProperties;
+import model.com.beewaxus.webhooksvcs.pubsrc.EventEnvelope;
 import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.kafka.common.errors.TimeoutException;
 import org.slf4j.Logger;
@@ -19043,8 +19043,8 @@ package com.java.barclaycardus.webhooksvcs.pubsrc.publisher;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.java.barclaycardus.webhooksvcs.pubsrc.config.WebhooksProperties;
-import com.java.barclaycardus.webhooksvcs.pubsrc.model.EventEnvelope;
+import config.com.beewaxus.webhooksvcs.pubsrc.WebhooksProperties;
+import model.com.beewaxus.webhooksvcs.pubsrc.EventEnvelope;
 import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.kafka.common.errors.TimeoutException;
 import org.slf4j.Logger;
@@ -19168,8 +19168,8 @@ package com.java.barclaycardus.webhooksvcs.pubsrc.publisher;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.java.barclaycardus.webhooksvcs.pubsrc.config.WebhooksProperties;
-import com.java.barclaycardus.webhooksvcs.pubsrc.model.EventEnvelope;
+import config.com.beewaxus.webhooksvcs.pubsrc.WebhooksProperties;
+import model.com.beewaxus.webhooksvcs.pubsrc.EventEnvelope;
 import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.kafka.common.errors.TimeoutException;
 import org.slf4j.Logger;
@@ -19293,8 +19293,8 @@ package com.java.barclaycardus.webhooksvcs.pubsrc.publisher;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.java.barclaycardus.webhooksvcs.pubsrc.config.WebhooksProperties;
-import com.java.barclaycardus.webhooksvcs.pubsrc.model.EventEnvelope;
+import config.com.beewaxus.webhooksvcs.pubsrc.WebhooksProperties;
+import model.com.beewaxus.webhooksvcs.pubsrc.EventEnvelope;
 import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.kafka.common.errors.TimeoutException;
 import org.slf4j.Logger;
@@ -19480,9 +19480,9 @@ Updating `ApiExceptionHandler` to include error messages in responses:
 ```java
 package com.java.barclaycardus.webhooksvcs.pubsrc.controller;
 
-import com.java.barclaycardus.webhooksvcs.pubsrc.publisher.KafkaPublishException;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.DynamoDbException;
-import com.java.barclaycardus.webhooksvcs.pubsrc.validation.SchemaValidationException;
+import publisher.com.beewaxus.webhooksvcs.pubsrc.KafkaPublishException;
+import schema.com.beewaxus.webhooksvcs.pubsrc.DynamoDbException;
+import validation.com.beewaxus.webhooksvcs.pubsrc.SchemaValidationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -19567,9 +19567,9 @@ Updating the exception handler to include the request path and ensure it works w
 ```java
 package com.java.barclaycardus.webhooksvcs.pubsrc.controller;
 
-import com.java.barclaycardus.webhooksvcs.pubsrc.publisher.KafkaPublishException;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.DynamoDbException;
-import com.java.barclaycardus.webhooksvcs.pubsrc.validation.SchemaValidationException;
+import publisher.com.beewaxus.webhooksvcs.pubsrc.KafkaPublishException;
+import schema.com.beewaxus.webhooksvcs.pubsrc.DynamoDbException;
+import validation.com.beewaxus.webhooksvcs.pubsrc.SchemaValidationException;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -19651,9 +19651,9 @@ public class ApiExceptionHandler {
 ```java
 package com.java.barclaycardus.webhooksvcs.pubsrc.controller;
 
-import com.java.barclaycardus.webhooksvcs.pubsrc.publisher.KafkaPublishException;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.DynamoDbException;
-import com.java.barclaycardus.webhooksvcs.pubsrc.validation.SchemaValidationException;
+import publisher.com.beewaxus.webhooksvcs.pubsrc.KafkaPublishException;
+import schema.com.beewaxus.webhooksvcs.pubsrc.DynamoDbException;
+import validation.com.beewaxus.webhooksvcs.pubsrc.SchemaValidationException;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -19738,9 +19738,9 @@ public class ApiExceptionHandler {
 ```java
 package com.java.barclaycardus.webhooksvcs.pubsrc.controller;
 
-import com.java.barclaycardus.webhooksvcs.pubsrc.publisher.KafkaPublishException;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.DynamoDbException;
-import com.java.barclaycardus.webhooksvcs.pubsrc.validation.SchemaValidationException;
+import publisher.com.beewaxus.webhooksvcs.pubsrc.KafkaPublishException;
+import schema.com.beewaxus.webhooksvcs.pubsrc.DynamoDbException;
+import validation.com.beewaxus.webhooksvcs.pubsrc.SchemaValidationException;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -19826,9 +19826,9 @@ public class ApiExceptionHandler {
 ```java
 package com.java.barclaycardus.webhooksvcs.pubsrc.controller;
 
-import com.java.barclaycardus.webhooksvcs.pubsrc.publisher.KafkaPublishException;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.DynamoDbException;
-import com.java.barclaycardus.webhooksvcs.pubsrc.validation.SchemaValidationException;
+import publisher.com.beewaxus.webhooksvcs.pubsrc.KafkaPublishException;
+import schema.com.beewaxus.webhooksvcs.pubsrc.DynamoDbException;
+import validation.com.beewaxus.webhooksvcs.pubsrc.SchemaValidationException;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -19924,9 +19924,9 @@ Adding `@Order` to ensure our handler takes precedence and handles the message c
 ```java
 package com.java.barclaycardus.webhooksvcs.pubsrc.controller;
 
-import com.java.barclaycardus.webhooksvcs.pubsrc.publisher.KafkaPublishException;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.DynamoDbException;
-import com.java.barclaycardus.webhooksvcs.pubsrc.validation.SchemaValidationException;
+import publisher.com.beewaxus.webhooksvcs.pubsrc.KafkaPublishException;
+import schema.com.beewaxus.webhooksvcs.pubsrc.DynamoDbException;
+import validation.com.beewaxus.webhooksvcs.pubsrc.SchemaValidationException;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -20159,9 +20159,9 @@ The exception handler returns `ResponseEntity`, but WebFlux requires `Mono<Respo
 ```java
 package com.java.barclaycardus.webhooksvcs.pubsrc.controller;
 
-import com.java.barclaycardus.webhooksvcs.pubsrc.publisher.KafkaPublishException;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.DynamoDbException;
-import com.java.barclaycardus.webhooksvcs.pubsrc.validation.SchemaValidationException;
+import publisher.com.beewaxus.webhooksvcs.pubsrc.KafkaPublishException;
+import schema.com.beewaxus.webhooksvcs.pubsrc.DynamoDbException;
+import validation.com.beewaxus.webhooksvcs.pubsrc.SchemaValidationException;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -20261,20 +20261,20 @@ package com.java.barclaycardus.webhooksvcs.pubsrc.controller;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.java.barclaycardus.webhooksvcs.pubsrc.converter.AvroSerializer;
-import com.java.barclaycardus.webhooksvcs.pubsrc.converter.FormatConverter;
-import com.java.barclaycardus.webhooksvcs.pubsrc.model.EventEnvelope;
-import com.java.barclaycardus.webhooksvcs.pubsrc.publisher.EventPublisher;
-import com.java.barclaycardus.webhooksvcs.pubsrc.publisher.KafkaPublishException;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.DynamoDbException;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaDefinition;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaDetailResponse;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaFormat;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaReference;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaService;
-import com.java.barclaycardus.webhooksvcs.pubsrc.validation.AvroSchemaValidator;
-import com.java.barclaycardus.webhooksvcs.pubsrc.validation.JsonSchemaValidator;
-import com.java.barclaycardus.webhooksvcs.pubsrc.validation.XmlSchemaValidator;
+import converter.com.beewaxus.webhooksvcs.pubsrc.AvroSerializer;
+import converter.com.beewaxus.webhooksvcs.pubsrc.FormatConverter;
+import model.com.beewaxus.webhooksvcs.pubsrc.EventEnvelope;
+import publisher.com.beewaxus.webhooksvcs.pubsrc.EventPublisher;
+import publisher.com.beewaxus.webhooksvcs.pubsrc.KafkaPublishException;
+import schema.com.beewaxus.webhooksvcs.pubsrc.DynamoDbException;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaDefinition;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaDetailResponse;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaFormat;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaReference;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaService;
+import validation.com.beewaxus.webhooksvcs.pubsrc.AvroSchemaValidator;
+import validation.com.beewaxus.webhooksvcs.pubsrc.JsonSchemaValidator;
+import validation.com.beewaxus.webhooksvcs.pubsrc.XmlSchemaValidator;
 import jakarta.validation.constraints.NotBlank;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericDatumReader;
@@ -20625,9 +20625,9 @@ public class EventController {
 ```java
 package com.java.barclaycardus.webhooksvcs.pubsrc.controller;
 
-import com.java.barclaycardus.webhooksvcs.pubsrc.publisher.KafkaPublishException;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.DynamoDbException;
-import com.java.barclaycardus.webhooksvcs.pubsrc.validation.SchemaValidationException;
+import publisher.com.beewaxus.webhooksvcs.pubsrc.KafkaPublishException;
+import schema.com.beewaxus.webhooksvcs.pubsrc.DynamoDbException;
+import validation.com.beewaxus.webhooksvcs.pubsrc.SchemaValidationException;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -20773,20 +20773,20 @@ package com.java.barclaycardus.webhooksvcs.pubsrc.controller;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.java.barclaycardus.webhooksvcs.pubsrc.converter.AvroSerializer;
-import com.java.barclaycardus.webhooksvcs.pubsrc.converter.FormatConverter;
-import com.java.barclaycardus.webhooksvcs.pubsrc.model.EventEnvelope;
-import com.java.barclaycardus.webhooksvcs.pubsrc.publisher.EventPublisher;
-import com.java.barclaycardus.webhooksvcs.pubsrc.publisher.KafkaPublishException;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.DynamoDbException;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaDefinition;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaDetailResponse;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaFormat;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaReference;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.SchemaService;
-import com.java.barclaycardus.webhooksvcs.pubsrc.validation.AvroSchemaValidator;
-import com.java.barclaycardus.webhooksvcs.pubsrc.validation.JsonSchemaValidator;
-import com.java.barclaycardus.webhooksvcs.pubsrc.validation.XmlSchemaValidator;
+import converter.com.beewaxus.webhooksvcs.pubsrc.AvroSerializer;
+import converter.com.beewaxus.webhooksvcs.pubsrc.FormatConverter;
+import model.com.beewaxus.webhooksvcs.pubsrc.EventEnvelope;
+import publisher.com.beewaxus.webhooksvcs.pubsrc.EventPublisher;
+import publisher.com.beewaxus.webhooksvcs.pubsrc.KafkaPublishException;
+import schema.com.beewaxus.webhooksvcs.pubsrc.DynamoDbException;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaDefinition;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaDetailResponse;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaFormat;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaReference;
+import schema.com.beewaxus.webhooksvcs.pubsrc.SchemaService;
+import validation.com.beewaxus.webhooksvcs.pubsrc.AvroSchemaValidator;
+import validation.com.beewaxus.webhooksvcs.pubsrc.JsonSchemaValidator;
+import validation.com.beewaxus.webhooksvcs.pubsrc.XmlSchemaValidator;
 import jakarta.validation.constraints.NotBlank;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericDatumReader;
@@ -21166,9 +21166,9 @@ Added error handling. The 500 suggests Spring's default handler may be intercept
 ```java
 package com.java.barclaycardus.webhooksvcs.pubsrc.controller;
 
-import com.java.barclaycardus.webhooksvcs.pubsrc.publisher.KafkaPublishException;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.DynamoDbException;
-import com.java.barclaycardus.webhooksvcs.pubsrc.validation.SchemaValidationException;
+import publisher.com.beewaxus.webhooksvcs.pubsrc.KafkaPublishException;
+import schema.com.beewaxus.webhooksvcs.pubsrc.DynamoDbException;
+import validation.com.beewaxus.webhooksvcs.pubsrc.SchemaValidationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.annotation.Order;
@@ -21292,9 +21292,9 @@ public class ApiExceptionHandler {
 ```java
 package com.java.barclaycardus.webhooksvcs.pubsrc.controller;
 
-import com.java.barclaycardus.webhooksvcs.pubsrc.publisher.KafkaPublishException;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.DynamoDbException;
-import com.java.barclaycardus.webhooksvcs.pubsrc.validation.SchemaValidationException;
+import publisher.com.beewaxus.webhooksvcs.pubsrc.KafkaPublishException;
+import schema.com.beewaxus.webhooksvcs.pubsrc.DynamoDbException;
+import validation.com.beewaxus.webhooksvcs.pubsrc.SchemaValidationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.annotation.Order;
@@ -21420,9 +21420,9 @@ public class ApiExceptionHandler {
 ```java
 package com.java.barclaycardus.webhooksvcs.pubsrc.controller;
 
-import com.java.barclaycardus.webhooksvcs.pubsrc.publisher.KafkaPublishException;
-import com.java.barclaycardus.webhooksvcs.pubsrc.schema.DynamoDbException;
-import com.java.barclaycardus.webhooksvcs.pubsrc.validation.SchemaValidationException;
+import publisher.com.beewaxus.webhooksvcs.pubsrc.KafkaPublishException;
+import schema.com.beewaxus.webhooksvcs.pubsrc.DynamoDbException;
+import validation.com.beewaxus.webhooksvcs.pubsrc.SchemaValidationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.annotation.Order;
