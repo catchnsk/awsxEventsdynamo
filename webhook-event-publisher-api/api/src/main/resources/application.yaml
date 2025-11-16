@@ -15,6 +15,9 @@ webhooks:
   kafka:
     bootstrap-servers: localhost:9092
     ingress-topic-prefix: wh.ingress
+    publish-timeout: PT30S  # 30 seconds timeout for Kafka publish operations
+    max-retries: 2           # Maximum number of retry attempts for failed publishes
+    retry-backoff-initial-delay: PT1S  # Initial delay before retry (exponential backoff)
 aws:
   region: us-east-1
 logging:

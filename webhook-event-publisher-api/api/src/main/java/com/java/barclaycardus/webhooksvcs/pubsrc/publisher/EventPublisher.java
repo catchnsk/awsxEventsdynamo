@@ -6,4 +6,6 @@ import reactor.core.publisher.Mono;
 public interface EventPublisher {
 
     Mono<String> publish(EventEnvelope envelope);
+    
+    Mono<String> publishAvro(EventEnvelope envelope, String topicName, byte[] avroBytes);
 }
