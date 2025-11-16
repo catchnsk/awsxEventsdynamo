@@ -1,0 +1,52 @@
+Example XSD Schema for EVENT_SCHEMA_DEFINITION_XML field in DynamoDB
+
+This XSD schema validates XML payloads with eventHeader and eventPayload structure:
+
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+    <xs:element name="event">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="eventHeader" minOccurs="0">
+                    <xs:complexType>
+                        <xs:sequence>
+                            <xs:element name="eventId" type="xs:string" minOccurs="0"/>
+                            <xs:element name="eventName" type="xs:string" minOccurs="0"/>
+                            <xs:element name="producerDomain" type="xs:string" minOccurs="0"/>
+                            <xs:element name="version" type="xs:string" minOccurs="0"/>
+                            <xs:element name="timestamp" type="xs:string" minOccurs="0"/>
+                        </xs:sequence>
+                    </xs:complexType>
+                </xs:element>
+                <xs:element name="eventPayload" minOccurs="0">
+                    <xs:complexType>
+                        <xs:sequence>
+                            <xs:element name="transactionId" type="xs:string" minOccurs="0"/>
+                            <xs:element name="customerId" type="xs:string" minOccurs="0"/>
+                            <xs:element name="amount" type="xs:decimal" minOccurs="0"/>
+                            <xs:element name="currency" type="xs:string" minOccurs="0"/>
+                            <xs:element name="status" type="xs:string" minOccurs="0"/>
+                            <xs:element name="metadata" minOccurs="0">
+                                <xs:complexType>
+                                    <xs:sequence>
+                                        <xs:any processContents="skip" minOccurs="0" maxOccurs="unbounded"/>
+                                    </xs:sequence>
+                                </xs:complexType>
+                            </xs:element>
+                        </xs:sequence>
+                    </xs:complexType>
+                </xs:element>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+</xs:schema>
+
+IMPORTANT: When storing in DynamoDB, escape the quotes and newlines properly.
+The XML declaration must be: <?xml version="1.0" encoding="UTF-8"?>
+NOT: <?xml version=1.0 encoding=UTF-8?> (missing quotes)
+
+For DynamoDB JSON format, use this (properly escaped):
+"EVENT_SCHEMA_DEFINITION_XML": {
+  "S": "<?xml version=\"1.0\" encoding=\"UTF-8\"?><xs:schema xmlns:xs=\"http://www.w3.org/2001/XMLSchema\"><xs:element name=\"event\"><xs:complexType><xs:sequence><xs:element name=\"eventHeader\" minOccurs=\"0\"><xs:complexType><xs:sequence><xs:element name=\"eventId\" type=\"xs:string\" minOccurs=\"0\"/><xs:element name=\"eventName\" type=\"xs:string\" minOccurs=\"0\"/><xs:element name=\"producerDomain\" type=\"xs:string\" minOccurs=\"0\"/><xs:element name=\"version\" type=\"xs:string\" minOccurs=\"0\"/><xs:element name=\"timestamp\" type=\"xs:string\" minOccurs=\"0\"/></xs:sequence></xs:complexType></xs:element><xs:element name=\"eventPayload\" minOccurs=\"0\"><xs:complexType><xs:sequence><xs:element name=\"transactionId\" type=\"xs:string\" minOccurs=\"0\"/><xs:element name=\"customerId\" type=\"xs:string\" minOccurs=\"0\"/><xs:element name=\"amount\" type=\"xs:decimal\" minOccurs=\"0\"/><xs:element name=\"currency\" type=\"xs:string\" minOccurs=\"0\"/><xs:element name=\"status\" type=\"xs:string\" minOccurs=\"0\"/><xs:element name=\"metadata\" minOccurs=\"0\"><xs:complexType><xs:sequence><xs:any processContents=\"skip\" minOccurs=\"0\" maxOccurs=\"unbounded\"/></xs:sequence></xs:complexType></xs:element></xs:sequence></xs:complexType></xs:element></xs:sequence></xs:complexType></xs:element></xs:schema>"
+}
+
