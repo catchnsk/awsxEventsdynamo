@@ -28,7 +28,9 @@ public class DynamoSchemaService implements SchemaService {
     private final DynamoDbClient dynamoDbClient;
     private final WebhooksProperties properties;
 
-    public DynamoSchemaService(DynamoDbClient dynamoDbClient, WebhooksProperties properties) {
+    public DynamoSchemaService(
+            DynamoDbClient dynamoDbClient,
+            WebhooksProperties properties) {
         this.dynamoDbClient = dynamoDbClient;
         this.properties = properties;
     }
@@ -47,11 +49,15 @@ public class DynamoSchemaService implements SchemaService {
                         if (item == null || item.isEmpty()) {
                             return null;
                         }
+                        // Prefer EVENT_SCHEMA_DEFINITION, fallback to EVENT_SCHEMA_DEFINITION_AVRO
+                        String avroSchema = stringValue(item, "EVENT_SCHEMA_DEFINITION", null);
+                        if (avroSchema == null || avroSchema.isEmpty()) {
+                            avroSchema = stringValue(item, "EVENT_SCHEMA_DEFINITION_AVRO", null);
+                        }
+                        
                         return new SchemaDefinition(
                                 reference,
-                                stringValue(item, "EVENT_SCHEMA_DEFINITION_JSON", "{}"),
-                                stringValue(item, "EVENT_SCHEMA_DEFINITION_XML", null),
-                                stringValue(item, "EVENT_SCHEMA_DEFINITION_AVRO", null),
+                                avroSchema,
                                 "ACTIVE".equals(stringValue(item, "EVENT_SCHEMA_STATUS", "INACTIVE")),
                                 Instant.parse(stringValue(item, "UPDATE_TS", Instant.now().toString()))
                         );
@@ -77,9 +83,10 @@ public class DynamoSchemaService implements SchemaService {
     public Flux<SchemaDefinition> fetchAllSchemas() {
         return Mono.fromCallable(() -> {
                     try {
-                        return dynamoDbClient.scan(ScanRequest.builder()
+                        ScanResponse scanResponse = dynamoDbClient.scan(ScanRequest.builder()
                                 .tableName(properties.dynamodb().tableName())
                                 .build());
+                        return scanResponse;
                     } catch (ResourceNotFoundException e) {
                         log.error("DynamoDB table '{}' not found", properties.dynamodb().tableName(), e);
                         throw new DynamoDbException("DynamoDB table '" + properties.dynamodb().tableName() + "' does not exist", e);
@@ -103,9 +110,7 @@ public class DynamoSchemaService implements SchemaService {
 
     @Override
     public Mono<SchemaDetailResponse> fetchSchemaBySchemaId(String schemaId) {
-        final String schemaIdForLogging = schemaId;
         return Mono.fromCallable(() -> {
-                    log.debug("Fetching schema by EVENT_SCHEMA_ID: {}", schemaId);
                     try {
                         Map<String, AttributeValue> expressionAttributeValues = new HashMap<>();
                         expressionAttributeValues.put(":schemaId", AttributeValue.builder().s(schemaId).build());
@@ -118,19 +123,12 @@ public class DynamoSchemaService implements SchemaService {
                         
                         ScanResponse scanResponse = dynamoDbClient.scan(scanRequest);
                         
-                        log.debug("Scan found {} items for schemaId: {}", scanResponse.items().size(), schemaId);
-                        
                         if (scanResponse.items().isEmpty()) {
-                            log.warn("No schema found with EVENT_SCHEMA_ID: {}", schemaId);
                             return null;
                         }
                         
                         // Return the first matching item (assuming EVENT_SCHEMA_ID is unique)
-                        Map<String, AttributeValue> item = scanResponse.items().get(0);
-                        log.debug("Found schema item with PK: {}, SK: {}", 
-                                stringValue(item, "PK", "N/A"), 
-                                stringValue(item, "SK", "N/A"));
-                        return item;
+                        return scanResponse.items().get(0);
                     } catch (ResourceNotFoundException e) {
                         log.error("DynamoDB table '{}' not found while fetching schemaId: {}", properties.dynamodb().tableName(), schemaId, e);
                         throw new DynamoDbException("DynamoDB table '" + properties.dynamodb().tableName() + "' does not exist", e);
@@ -141,13 +139,6 @@ public class DynamoSchemaService implements SchemaService {
                 })
                 .subscribeOn(Schedulers.boundedElastic())
                 .map(this::itemToSchemaDetailResponse)
-                .doOnNext(response -> {
-                    if (response == null) {
-                        log.warn("Failed to convert DynamoDB item to SchemaDetailResponse for schemaId: {}", schemaIdForLogging);
-                    } else {
-                        log.debug("Successfully converted schema: {}", response.eventSchemaId());
-                    }
-                })
                 .onErrorMap(SdkException.class, e -> {
                     if (e instanceof ResourceNotFoundException) {
                         return new DynamoDbException("DynamoDB table '" + properties.dynamodb().tableName() + "' does not exist", e);
@@ -188,17 +179,41 @@ public class DynamoSchemaService implements SchemaService {
                 }
             }
             
+            // Prefer EVENT_SCHEMA_DEFINITION, fallback to EVENT_SCHEMA_DEFINITION_AVRO
+            String avroSchema = stringValue(item, "EVENT_SCHEMA_DEFINITION", null);
+            if (avroSchema == null || avroSchema.isEmpty()) {
+                avroSchema = stringValue(item, "EVENT_SCHEMA_DEFINITION_AVRO", null);
+            }
+            
+            String status = stringValue(item, "EVENT_SCHEMA_STATUS", "INACTIVE");
+            String updateTsStr = stringValue(item, "UPDATE_TS", null);
+            boolean isActive = "ACTIVE".equals(status);
+            
+            if (avroSchema == null || avroSchema.isEmpty()) {
+                return null;
+            }
+            
+            // Parse UPDATE_TS with error handling
+            Instant updateTs = Instant.now(); // Default to now if parsing fails
+            if (updateTsStr != null && !updateTsStr.isEmpty()) {
+                try {
+                    updateTs = Instant.parse(updateTsStr);
+                } catch (DateTimeParseException e) {
+                    log.warn("Failed to parse UPDATE_TS: {} for PK: {}, SK: {}, using current time", updateTsStr, pk, sk);
+                }
+            }
+            
             return new SchemaDefinition(
                     reference,
-                    stringValue(item, "EVENT_SCHEMA_DEFINITION_JSON", "{}"),
-                    stringValue(item, "EVENT_SCHEMA_DEFINITION_XML", null),
-                    stringValue(item, "EVENT_SCHEMA_DEFINITION_AVRO", null),
-                    "ACTIVE".equals(stringValue(item, "EVENT_SCHEMA_STATUS", "INACTIVE")),
-                    Instant.parse(stringValue(item, "UPDATE_TS", Instant.now().toString()))
+                    avroSchema,
+                    isActive,
+                    updateTs
             );
         } catch (Exception e) {
             // Log and skip invalid items instead of throwing
-            // This handles any unexpected formats gracefully
+            String pk = stringValue(item, "PK", "N/A");
+            String sk = stringValue(item, "SK", "N/A");
+            log.error("Error converting DynamoDB item to SchemaDefinition (PK: {}, SK: {}): {}", pk, sk, e.getMessage(), e);
             return null;
         }
     }
@@ -257,9 +272,8 @@ public class DynamoSchemaService implements SchemaService {
                     stringValue(item, "EVENT_NAME", null),
                     stringValue(item, "VERSION", null),
                     stringValue(item, "EVENT_SCHEMA_HEADER", null),
-                    stringValue(item, "EVENT_SCHEMA_DEFINITION_JSON", null),
-                    stringValue(item, "EVENT_SCHEMA_DEFINITION_XML", null),
                     stringValue(item, "EVENT_SCHEMA_DEFINITION_AVRO", null),
+                    stringValue(item, "EVENT_SCHEMA_DEFINITION", null),
                     stringValue(item, "EVENT_SAMPLE", null),
                     stringValue(item, "EVENT_SCHEMA_STATUS", null),
                     stringValue(item, "HAS_SENSITIVE_DATA", null),

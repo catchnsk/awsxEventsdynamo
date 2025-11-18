@@ -3,39 +3,32 @@ spring:
     name: event-validation-api
   main:
     web-application-type: reactive
+  profiles:
+    active: local
+
 management:
   endpoints:
     web:
       exposure:
         include: health,prometheus,info
+
 webhooks:
   dynamodb:
     table-name: event_schema
-    cache-ttl: PT5M
   kafka:
     bootstrap-servers: localhost:9092
     ingress-topic-prefix: wh.ingress
     publish-timeout: PT30S  # 30 seconds timeout for Kafka publish operations
     max-retries: 2           # Maximum number of retry attempts for failed publishes
     retry-backoff-initial-delay: PT1S  # Initial delay before retry (exponential backoff)
+
 aws:
   region: us-east-1
+  dynamodb:
+    endpoint: http://localhost:8000
+
 logging:
   level:
     root: INFO
-    com.java.barclaycardus.webhooksvcs.pubsrc: DEBUG
--spring:
-  profiles:
-    active: local
----
-spring:
-  config:
-    activate:
-      on-profile: local
-aws:
-  dynamodb:
-    endpoint: http://localhost:8000
-  region: us-east-1
-logging:
-  level:
+    com.beewaxus.webhooksvcs.pubsrc: DEBUG
     com.amazonaws: DEBUG

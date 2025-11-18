@@ -10,7 +10,9 @@ public record WebhooksProperties(
         KafkaProperties kafka
 ) {
 
-    public record DynamoProperties(String tableName, Duration cacheTtl) {}
+    public record DynamoProperties(
+            String tableName
+    ) {}
 
     public record KafkaProperties(
             String bootstrapServers,

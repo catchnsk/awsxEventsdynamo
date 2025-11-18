@@ -1,9 +1,9 @@
 package com.beewaxus.webhooksvcs.pubsrc.controller;
 
+import com.beewaxus.webhooksvcs.pubsrc.config.WebhooksProperties;
 import com.beewaxus.webhooksvcs.pubsrc.converter.AvroSerializer;
 import com.beewaxus.webhooksvcs.pubsrc.converter.FormatConverter;
 import com.beewaxus.webhooksvcs.pubsrc.validation.AvroSchemaValidator;
-import com.beewaxus.webhooksvcs.pubsrc.validation.XmlSchemaValidator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.beewaxus.webhooksvcs.pubsrc.model.EventEnvelope;
 import com.beewaxus.webhooksvcs.pubsrc.publisher.EventPublisher;
@@ -11,13 +11,18 @@ import com.beewaxus.webhooksvcs.pubsrc.schema.SchemaDefinition;
 import com.beewaxus.webhooksvcs.pubsrc.schema.SchemaDetailResponse;
 import com.beewaxus.webhooksvcs.pubsrc.schema.SchemaReference;
 import com.beewaxus.webhooksvcs.pubsrc.schema.SchemaService;
-import com.beewaxus.webhooksvcs.pubsrc.validation.JsonSchemaValidator;
+
+import java.time.Duration;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
 import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
+import org.springframework.context.annotation.Primary;
+import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import reactor.core.publisher.Flux;
@@ -25,9 +30,18 @@ import reactor.core.publisher.Mono;
 
 import java.time.Instant;
 
-@WebFluxTest(controllers = EventController.class)
+@WebFluxTest(controllers = {EventController.class, ApiExceptionHandler.class})
 @Import({EventControllerTest.TestConfig.class})
 class EventControllerTest {
+
+    @MockBean
+    private DynamoDbClient dynamoDbClient;
+
+    @MockBean
+    private KafkaTemplate<String, String> kafkaTemplate;
+
+    @MockBean
+    private KafkaTemplate<String, byte[]> avroKafkaTemplate;
 
     private final WebTestClient webTestClient;
 
@@ -134,13 +148,28 @@ class EventControllerTest {
     }
 
     @Test
-    void publishEventBySchemaId_WhenAvroSchemaMissing_ReturnsBadRequest() {
+    void publishEventBySchemaId_WhenSchemaDefinitionMissing_ReturnsBadRequest() {
         webTestClient.post()
-                .uri("/events/schema_id/NO_AVRO_SCHEMA")
+                .uri("/events/schema_id/NO_SCHEMA_DEFINITION")
                 .header("Content-Type", "application/json")
                 .bodyValue("{\"customerId\":\"123\"}")
                 .exchange()
                 .expectStatus().isBadRequest();
+    }
+
+    @Test
+    void publishEventBySchemaId_WithFallbackToAvroSchema_ReturnsAccepted() {
+        // Test that when EVENT_SCHEMA_DEFINITION is null, it falls back to EVENT_SCHEMA_DEFINITION_AVRO
+        webTestClient.post()
+                .uri("/events/schema_id/FALLBACK_SCHEMA")
+                .header("Content-Type", "application/json")
+                .header("X-Event-Id", "evt-fallback-test")
+                .bodyValue("{\"customerId\":\"123\",\"status\":\"ACTIVE\"}")
+                .exchange()
+                .expectStatus().isAccepted()
+                .expectBody()
+                .jsonPath("$.eventId").exists()
+                .jsonPath("$.eventId").isEqualTo("evt-fallback-test");
     }
 
     @Test
@@ -169,19 +198,12 @@ class EventControllerTest {
     static class TestConfig {
 
         @Bean
+        @Primary
         SchemaService schemaService() {
+            String avroSchema = "{\"type\":\"record\",\"name\":\"CustomerUpdated\",\"fields\":[{\"name\":\"customerId\",\"type\":\"string\"}]}";
             SchemaDefinition definition = new SchemaDefinition(
                     new SchemaReference("demo", "CustomerUpdated", "v1"),
-                    """
-                            {
-                              "$schema":"http://json-schema.org/draft-07/schema#",
-                              "type":"object",
-                              "properties":{"customerId":{"type":"string"}},
-                              "required":["customerId"]
-                            }
-                            """,
-                    null, // xmlSchema
-                    null, // avroSchema
+                    avroSchema,
                     true,
                     Instant.now()
             );
@@ -202,19 +224,6 @@ class EventControllerTest {
                         return Mono.empty();
                     }
                     
-                    String simpleXmlSchema = """
-                            <?xml version="1.0" encoding="UTF-8"?>
-                            <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
-                                <xs:element name="event">
-                                    <xs:complexType>
-                                        <xs:sequence>
-                                            <xs:element name="customerId" type="xs:string" minOccurs="0"/>
-                                            <xs:element name="status" type="xs:string" minOccurs="0"/>
-                                        </xs:sequence>
-                                    </xs:complexType>
-                                </xs:element>
-                            </xs:schema>
-                            """;
                     String simpleAvroSchema = "{\"type\":\"record\",\"name\":\"TestEvent\",\"fields\":[{\"name\":\"customerId\",\"type\":\"string\"}]}";
                     
                     if ("INACTIVE_SCHEMA".equals(schemaId)) {
@@ -224,9 +233,8 @@ class EventControllerTest {
                                 "TestEvent",
                                 "1.0",
                                 "Test header",
-                                "{\"type\":\"object\",\"properties\":{\"customerId\":{\"type\":\"string\"}}}",
-                                simpleXmlSchema,
-                                simpleAvroSchema,
+                                simpleAvroSchema, // eventSchemaDefinitionAvro
+                                simpleAvroSchema, // eventSchemaDefinition
                                 null,
                                 "INACTIVE",
                                 "NO",
@@ -247,9 +255,8 @@ class EventControllerTest {
                                 "TestEvent",
                                 "1.0",
                                 "Test header",
-                                "{\"type\":\"object\",\"properties\":{\"customerId\":{\"type\":\"string\"}}}",
-                                simpleXmlSchema,
-                                simpleAvroSchema,
+                                simpleAvroSchema, // eventSchemaDefinitionAvro
+                                simpleAvroSchema, // eventSchemaDefinition
                                 null,
                                 "ACTIVE",
                                 "NO",
@@ -270,9 +277,8 @@ class EventControllerTest {
                                 "TestEvent",
                                 "1.0",
                                 "Test header",
-                                "{\"type\":\"object\",\"properties\":{\"customerId\":{\"type\":\"string\"}}}",
-                                simpleXmlSchema,
-                                simpleAvroSchema,
+                                simpleAvroSchema, // eventSchemaDefinitionAvro
+                                simpleAvroSchema, // eventSchemaDefinition
                                 null,
                                 "ACTIVE",
                                 "NO",
@@ -286,16 +292,39 @@ class EventControllerTest {
                         ));
                     }
                     
-                    if ("NO_AVRO_SCHEMA".equals(schemaId)) {
+                    if ("NO_SCHEMA_DEFINITION".equals(schemaId)) {
                         return Mono.just(new SchemaDetailResponse(
-                                "NO_AVRO_SCHEMA",
+                                "NO_SCHEMA_DEFINITION",
                                 "demo",
                                 "TestEvent",
                                 "1.0",
                                 "Test header",
-                                "{\"type\":\"object\",\"properties\":{\"customerId\":{\"type\":\"string\"}}}",
-                                simpleXmlSchema,
+                                null, // eventSchemaDefinitionAvro (fallback)
+                                null, // eventSchemaDefinition (primary - missing, should fail)
                                 null,
+                                "ACTIVE",
+                                "NO",
+                                "user1",
+                                "test.topic",
+                                "ACTIVE",
+                                Instant.now(),
+                                "user1",
+                                Instant.now(),
+                                "user1"
+                        ));
+                    }
+                    
+                    if ("FALLBACK_SCHEMA".equals(schemaId)) {
+                        // Test fallback: EVENT_SCHEMA_DEFINITION is null, but EVENT_SCHEMA_DEFINITION_AVRO exists
+                        String fallbackAvroSchema = "{\"type\":\"record\",\"name\":\"TestEvent\",\"fields\":[{\"name\":\"customerId\",\"type\":\"string\"},{\"name\":\"status\",\"type\":\"string\"}]}";
+                        return Mono.just(new SchemaDetailResponse(
+                                "FALLBACK_SCHEMA",
+                                "demo",
+                                "TestEvent",
+                                "1.0",
+                                "Test header",
+                                fallbackAvroSchema, // eventSchemaDefinitionAvro (fallback - will be used)
+                                null, // eventSchemaDefinition (primary - null, so falls back)
                                 null,
                                 "ACTIVE",
                                 "NO",
@@ -310,49 +339,7 @@ class EventControllerTest {
                     }
                     
                     // Default: Return valid schema for SCHEMA_0001
-                    // XSD schema matching the actual XML structure with eventHeader and eventPayload
-                    String xmlSchema = """
-                            <?xml version="1.0" encoding="UTF-8"?>
-                            <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
-                                <xs:element name="event">
-                                    <xs:complexType>
-                                        <xs:sequence>
-                                            <xs:element name="eventHeader" minOccurs="0">
-                                                <xs:complexType>
-                                                    <xs:sequence>
-                                                        <xs:element name="eventId" type="xs:string" minOccurs="0"/>
-                                                        <xs:element name="eventName" type="xs:string" minOccurs="0"/>
-                                                        <xs:element name="producerDomain" type="xs:string" minOccurs="0"/>
-                                                        <xs:element name="version" type="xs:string" minOccurs="0"/>
-                                                        <xs:element name="timestamp" type="xs:string" minOccurs="0"/>
-                                                    </xs:sequence>
-                                                </xs:complexType>
-                                            </xs:element>
-                                            <xs:element name="eventPayload" minOccurs="0">
-                                                <xs:complexType>
-                                                    <xs:sequence>
-                                                        <xs:element name="transactionId" type="xs:string" minOccurs="0"/>
-                                                        <xs:element name="customerId" type="xs:string" minOccurs="0"/>
-                                                        <xs:element name="amount" type="xs:decimal" minOccurs="0"/>
-                                                        <xs:element name="currency" type="xs:string" minOccurs="0"/>
-                                                        <xs:element name="status" type="xs:string" minOccurs="0"/>
-                                                        <xs:element name="metadata" minOccurs="0">
-                                                            <xs:complexType>
-                                                                <xs:sequence>
-                                                                    <xs:any processContents="skip" minOccurs="0" maxOccurs="unbounded"/>
-                                                                </xs:sequence>
-                                                            </xs:complexType>
-                                                        </xs:element>
-                                                    </xs:sequence>
-                                                </xs:complexType>
-                                            </xs:element>
-                                            <xs:element name="customerId" type="xs:string" minOccurs="0"/>
-                                            <xs:element name="status" type="xs:string" minOccurs="0"/>
-                                        </xs:sequence>
-                                    </xs:complexType>
-                                </xs:element>
-                            </xs:schema>
-                            """;
+                    String avroSchema = "{\"type\":\"record\",\"name\":\"TestEvent\",\"fields\":[{\"name\":\"customerId\",\"type\":\"string\"},{\"name\":\"status\",\"type\":\"string\"}]}";
                     
                     return Mono.just(new SchemaDetailResponse(
                             "SCHEMA_0001",
@@ -360,9 +347,8 @@ class EventControllerTest {
                             "TestEvent",
                             "1.0",
                             "Test header",
-                            "{\"type\":\"object\",\"properties\":{\"customerId\":{\"type\":\"string\"},\"status\":{\"type\":\"string\"}},\"required\":[\"customerId\"]}",
-                            xmlSchema,
-                            "{\"type\":\"record\",\"name\":\"TestEvent\",\"fields\":[{\"name\":\"customerId\",\"type\":\"string\"},{\"name\":\"status\",\"type\":\"string\"}]}",
+                            avroSchema, // eventSchemaDefinitionAvro (fallback)
+                            avroSchema, // eventSchemaDefinition (primary - used for validation)
                             null,
                             "ACTIVE",
                             "NO",
@@ -379,6 +365,7 @@ class EventControllerTest {
         }
 
         @Bean
+        @Primary
         EventPublisher eventPublisher() {
             return new EventPublisher() {
                 @Override
@@ -394,28 +381,45 @@ class EventControllerTest {
         }
 
         @Bean
+        @Primary
         AvroSerializer avroSerializer() {
             return new AvroSerializer();
         }
 
         @Bean
-        JsonSchemaValidator jsonSchemaValidator() {
-            return new JsonSchemaValidator();
-        }
-
-        @Bean
-        XmlSchemaValidator xmlSchemaValidator() {
-            return new XmlSchemaValidator();
-        }
-
-        @Bean
+        @Primary
         AvroSchemaValidator avroSchemaValidator() {
             return new AvroSchemaValidator();
         }
 
         @Bean
+        @Primary
         FormatConverter formatConverter() {
             return new FormatConverter();
+        }
+
+        @Bean
+        @Primary
+        ObjectMapper objectMapper() {
+            return new ObjectMapper();
+        }
+
+        @Bean
+        @Primary
+        WebhooksProperties webhooksProperties() {
+            // Create test WebhooksProperties with default values
+            return new WebhooksProperties(
+                    new WebhooksProperties.DynamoProperties(
+                            "event_schema"
+                    ),
+                    new WebhooksProperties.KafkaProperties(
+                            "localhost:9092",
+                            "wh.ingress",
+                            Duration.ofSeconds(30),
+                            2,
+                            Duration.ofSeconds(1)
+                    )
+            );
         }
     }
 }
