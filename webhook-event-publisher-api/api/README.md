@@ -4,6 +4,7 @@ Spring Boot WebFlux service that exposes the endpoints defined in `03-event-vali
 
 - `POST /events/{eventName}` validates payloads against the schema registry (DynamoDB) and publishes to MSK ingress topics.
 - `GET /schemas/{domain}/{event}/{version}` returns cached schema metadata for producers/SDKs.
+- `POST /cache/evict/all` clears and reloads the in-memory schema caches.
 
 ## Requirements
 - Java 21+
@@ -24,6 +25,10 @@ Environment variables / application properties to set before running against AWS
 | `webhooks.dynamodb.table-name` | Table storing schemas (`event_schema`) |
 | `webhooks.kafka.bootstrap-servers` | MSK broker list or local Kafka endpoint |
 | `webhooks.kafka.ingress-topic-prefix` | Topic prefix (e.g., `wh.ingress`) |
+| `webhooks.cache.enabled` | Toggle in-memory schema cache (`true` default) |
+| `webhooks.cache.schema-ttl` | Cache TTL for schema lookups (`PT5M` default) |
+| `webhooks.cache.schema-detail-ttl` | Cache TTL for schema detail lookups (`PT5M` default) |
+| `webhooks.cache.maximum-entries` | Max cache size before evictions (`1000` default) |
 | `AWS_REGION` | Region for DynamoDB/MSK |
 
 ## Testing

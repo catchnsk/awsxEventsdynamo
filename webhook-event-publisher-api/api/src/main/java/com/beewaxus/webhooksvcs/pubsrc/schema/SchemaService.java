@@ -10,4 +10,8 @@ public interface SchemaService {
     Flux<SchemaDefinition> fetchAllSchemas();
     
     Mono<SchemaDetailResponse> fetchSchemaBySchemaId(String schemaId);
+
+    default Mono<Void> evictAndReload() {
+        return Mono.empty();
+    }
 }

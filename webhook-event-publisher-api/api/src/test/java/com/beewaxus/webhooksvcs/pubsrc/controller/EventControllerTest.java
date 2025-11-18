@@ -361,6 +361,11 @@ class EventControllerTest {
                             "user1"
                     ));
                 }
+
+                @Override
+                public Mono<Void> evictAndReload() {
+                    return Mono.empty();
+                }
             };
         }
 
@@ -418,6 +423,12 @@ class EventControllerTest {
                             Duration.ofSeconds(30),
                             2,
                             Duration.ofSeconds(1)
+                    ),
+                    new WebhooksProperties.CacheProperties(
+                            true,
+                            Duration.ofMinutes(5),
+                            Duration.ofMinutes(5),
+                            100
                     )
             );
         }

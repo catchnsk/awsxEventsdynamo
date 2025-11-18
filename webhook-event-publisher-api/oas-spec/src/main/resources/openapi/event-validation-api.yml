@@ -24,18 +24,18 @@ paths:
           schema:
             type: string
           description: Logical event name (e.g., CustomerUpdated)
-        - name: producer-domain
+        - name: X-Producer-Domain
           in: header
           required: true
           schema:
             type: string
           description: Producer domain used for routing and topic derivation
-        - name: schema-id
+        - name: X-Event-Version
           in: header
           required: true
           schema:
             type: string
-          description: Identifier of the schema stored in DynamoDB
+          description: Event schema version (e.g., v1) used when building the schema reference
       requestBody:
         required: true
         content:

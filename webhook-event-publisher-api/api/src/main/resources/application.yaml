@@ -21,6 +21,11 @@ webhooks:
     publish-timeout: PT30S  # 30 seconds timeout for Kafka publish operations
     max-retries: 2           # Maximum number of retry attempts for failed publishes
     retry-backoff-initial-delay: PT1S  # Initial delay before retry (exponential backoff)
+  cache:
+    enabled: true
+    schema-ttl: PT24H
+    schema-detail-ttl: PT24H
+    maximum-entries: 1000
 
 aws:
   region: us-east-1
