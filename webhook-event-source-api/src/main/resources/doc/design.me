@@ -1,0 +1,275 @@
+I'll provide a complete design overview of the webhook-event-source-api:
+
+  Architecture Overview
+
+  ┌─────────────────────────────────────────────────────────────────────────┐
+  │                     WEBHOOK EVENT SOURCE API                             │
+  │                 (Event Ingestion & Transformation Service)               │
+  └─────────────────────────────────────────────────────────────────────────┘
+
+  ┌──────────────────────────────────────────────────────────────────────────┐
+  │                          LAYER 1: INGESTION                              │
+  └──────────────────────────────────────────────────────────────────────────┘
+
+      ┌─────────────────┐              ┌──────────────────┐
+      │  AMQ Listener   │              │ Kafka Listener   │
+      │  (JMS Queues)   │              │   (Topics)       │
+      └────────┬────────┘              └────────┬─────────┘
+               │                                │
+               │ Multiple Queues                │ Multiple Topics
+               │ - Per-queue broker             │ - Per-topic cluster
+               │ - Per-queue credentials        │ - Per-topic groupId
+               │ - Per-queue schemaId           │ - Per-topic schemaId
+               │ - Per-queue contentType        │ - Per-topic contentType
+               │                                │
+               └────────────┬───────────────────┘
+                            │
+                            ▼
+                ┌──────────────────────┐
+                │ InboundMessageContext│
+                │  - schemaId          │
+                │  - payload           │
+                │  - headers           │
+                │  - contentType       │
+                │  - partitionKey      │
+                └──────────┬───────────┘
+                            │
+                            ▼
+
+  ┌──────────────────────────────────────────────────────────────────────────┐
+  │                    LAYER 2: PROCESSING SERVICE                           │
+  └──────────────────────────────────────────────────────────────────────────┘
+
+                ┌──────────────────────────┐
+                │ EventProcessingService   │
+                │                          │
+                │ 1. Resolve Schema        │─────┐
+                │ 2. Transform Payload     │     │
+                │ 3. Validate Avro         │     │
+                │ 4. Publish to MSK        │     │
+                └──────────────────────────┘     │
+                                                 │
+  ┌──────────────────────────────────────────────┼───────────────────────────┐
+  │                    LAYER 3: SCHEMA LAYER     │                           │
+  └──────────────────────────────────────────────┼───────────────────────────┘
+                                                 │
+                      ┌──────────────────────────▼──────┐
+                      │      SchemaService              │
+                      │   (Cache + Repository)          │
+                      └────────┬────────────────────────┘
+                               │
+                     ┌─────────┴──────────┐
+                     │                    │
+            ┌────────▼─────────┐  ┌──────▼──────────────┐
+            │  SchemaCache     │  │ DynamoDbRepository  │
+            │  (Caffeine)      │  │                     │
+            │  - TTL: 15min    │  │ Fetches:            │
+            │  - Max: 1000     │  │  - schema_id        │
+            └──────────────────┘  │  - schema_definition│
+                                  │  - format_type      │
+                                  │  - transform_flag   │
+                                  │  - status           │
+                                  │  - producer_domain  │
+                                  │  - event_name       │
+                                  └─────────────────────┘
+
+  ┌──────────────────────────────────────────────────────────────────────────┐
+  │                   LAYER 4: TRANSFORMATION PIPELINE                       │
+  └──────────────────────────────────────────────────────────────────────────┘
+
+                ┌──────────────────────────────┐
+                │  TransformationService       │
+                │                              │
+                │  Step 1: Parse by contentType│
+                │  ┌──────────────────────────┐│
+                │  │ application/json   → JSON││
+                │  │ application/xml    → XML ││
+                │  │ application/soap+xml → SOAP│
+                │  └──────────────────────────┘│
+                │           │                   │
+                │           ▼                   │
+                │  Step 2: Convert to JSON     │
+                │  ┌──────────────────────────┐│
+                │  │ SoapToJsonConverter      ││
+                │  │ XmlToJsonConverter       ││
+                │  │ (or passthrough for JSON)││
+                │  └──────────────────────────┘│
+                │           │                   │
+                │           ▼                   │
+                │  Step 3: Convert to Avro     │
+                │  ┌──────────────────────────┐│
+                │  │ JsonToAvroConverter      ││
+                │  │ (Binary format)          ││
+                │  └──────────────────────────┘│
+                └──────────────────────────────┘
+
+  ┌──────────────────────────────────────────────────────────────────────────┐
+  │                     LAYER 5: VALIDATION                                  │
+  └──────────────────────────────────────────────────────────────────────────┘
+
+                ┌──────────────────────────────┐
+                │     SchemaValidator          │
+                │                              │
+                │  Validates Avro binary       │
+                │  against schema definition   │
+                │  from EVENT_SCHEMA_DEFINITION│
+                │                              │
+                │  Uses Avro BinaryDecoder     │
+                └──────────────────────────────┘
+
+  ┌──────────────────────────────────────────────────────────────────────────┐
+  │                     LAYER 6: PUBLISHING                                  │
+  └──────────────────────────────────────────────────────────────────────────┘
+
+                ┌──────────────────────────────┐
+                │   MskKafkaPublisher          │
+                │                              │
+                │  Topic: {EVENT_NAME}         │
+                │  Partition Key: eventId/     │
+                │                correlationId │
+                │  Payload: Avro binary        │
+                └────────────┬─────────────────┘
+                             │
+                             ▼
+                     ┌───────────────┐
+                     │   AWS MSK     │
+                     │   (Kafka)     │
+                     └───────────────┘
+
+  ┌──────────────────────────────────────────────────────────────────────────┐
+  │                     ERROR HANDLING LAYER                                 │
+  └──────────────────────────────────────────────────────────────────────────┘
+
+                ┌──────────────────────────────┐
+                │    RetryPublisher            │
+                │                              │
+                │  - Validation errors → DLQ   │
+                │  - Transformation errors → DLQ│
+                │  - Other errors → Retry Queue│
+                └──────────────────────────────┘
+
+  Component Details
+
+  Configuration Layer
+
+  ListenerProperties
+  ├── Source
+  │   ├── AMQ
+  │   │   └── QueueConfig[] (unlimited)
+  │   │       ├── name
+  │   │       ├── schemaId
+  │   │       ├── contentType
+  │   │       ├── brokerUrl (per-queue)
+  │   │       ├── username (per-queue)
+  │   │       └── password (per-queue)
+  │   └── Kafka
+  │       └── TopicConfig[] (unlimited)
+  │           ├── name
+  │           ├── schemaId
+  │           ├── contentType
+  │           ├── bootstrapServers (per-topic)
+  │           └── groupId (per-topic)
+  ├── AWS
+  │   └── DynamoDB
+  │       ├── table
+  │       └── schemaCacheTtl
+  └── Output
+      └── MSK
+          └── bootstrapServers
+
+  Data Flow
+
+  1. Message Arrival
+     ├─ AMQ Queue → AmqListener
+     └─ Kafka Topic → KafkaSourceListener
+
+  2. Context Creation
+     └─ InboundMessageContext(schemaId, payload, headers, contentType)
+
+  3. Schema Resolution
+     ├─ Check SchemaCache
+     └─ If miss → DynamoDbSchemaRepository → Cache
+
+  4. Transformation
+     ├─ Parse by contentType (XML/SOAP/JSON)
+     ├─ Convert to JSON
+     └─ Convert JSON to Avro binary
+
+  5. Validation
+     └─ Validate Avro against EVENT_SCHEMA_DEFINITION
+
+  6. Publishing
+     └─ Publish to MSK topic {EVENT_NAME}
+
+  7. Error Handling
+     ├─ SchemaValidationException → DLQ
+     ├─ TransformationException → DLQ
+     └─ Other Exception → Retry Queue
+
+  Key Design Patterns
+
+  1. Multi-Tenant Connection Management
+
+  - AMQ: ConnectionFactoryManager pools connections per broker URL
+  - Kafka: ConsumerFactoryManager pools connections per cluster:groupId
+
+  2. Caching Strategy
+
+  - Caffeine cache with 15-minute TTL
+  - Max 1000 schemas in memory
+  - Lazy loading from DynamoDB
+
+  3. Dynamic Listener Registration
+
+  - AMQ: Programmatic registration via JmsListenerEndpointRegistry
+  - Kafka: Programmatic registration via ConcurrentMessageListenerContainer
+
+  4. Format Agnostic Processing
+
+  - ContentType-driven parsing: XML/SOAP/JSON → JSON
+  - Schema-driven validation: JSON → Avro → Validate
+  - Universal output: Always Avro binary to MSK
+
+  File Structure
+
+  webhook-event-source-api/
+  ├── src/main/java/com/barclaycardus/webhooksvcs/evntsrc/
+  │   ├── ListenerServiceApplication.java
+  │   ├── config/
+  │   │   ├── ListenerProperties.java
+  │   │   ├── JmsConfig.java (ConnectionFactoryManager)
+  │   │   ├── KafkaConsumerConfig.java (ConsumerFactoryManager)
+  │   │   ├── KafkaProducerConfig.java
+  │   │   └── AwsClientConfig.java
+  │   ├── listener/
+  │   │   ├── AmqListener.java (dynamic multi-queue)
+  │   │   └── KafkaSourceListener.java (dynamic multi-topic)
+  │   ├── service/
+  │   │   └── EventProcessingService.java (orchestrator)
+  │   ├── schema/
+  │   │   ├── SchemaService.java
+  │   │   ├── SchemaCache.java
+  │   │   ├── SchemaValidator.java
+  │   │   ├── SchemaRepository.java (interface)
+  │   │   ├── DynamoDbSchemaRepository.java
+  │   │   └── SchemaMetadata.java
+  │   ├── transform/
+  │   │   ├── TransformationService.java
+  │   │   ├── SoapToJsonConverter.java
+  │   │   ├── XmlToJsonConverter.java
+  │   │   └── JsonToAvroConverter.java
+  │   ├── publisher/
+  │   │   ├── MskKafkaPublisher.java
+  │   │   └── RetryPublisher.java
+  │   ├── model/
+  │   │   ├── InboundMessageContext.java
+  │   │   └── ProcessedEvent.java
+  │   └── error/
+  │       ├── ProcessingException.java
+  │       ├── SchemaValidationException.java
+  │       └── TransformationException.java
+  └── src/main/resources/
+      └── application.yml
+
+  This design provides scalable, multi-tenant event ingestion with format 
+  transformation, schema validation, and reliable publishing to AWS MSK.

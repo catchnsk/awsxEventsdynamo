@@ -36,18 +36,13 @@ public class SchemaValidator {
         this.objectMapper = objectMapper;
     }
 
-    public void validate(SchemaMetadata metadata, String payload) {
+    public void validate(SchemaMetadata metadata, byte[] avroPayload) {
         if (!metadata.isActive()) {
             throw new SchemaValidationException("Schema " + metadata.schemaId() + " is inactive");
         }
-        switch (metadata.formatType()) {
-            case JSON -> validateJson(metadata, payload);
-            case XML, SOAP -> validateXml(metadata, payload);
-            case AVRO -> validateAvro(metadata, payload);
-            default -> {
-                log.warn("Unsupported format {} for schema {}", metadata.formatType(), metadata.schemaId());
-            }
-        }
+
+        // Validate Avro payload against schema definition from EVENT_SCHEMA_DEFINITION
+        validateAvro(metadata, avroPayload);
     }
 
     private void validateJson(SchemaMetadata metadata, String payload) {
@@ -74,13 +69,13 @@ public class SchemaValidator {
         }
     }
 
-    private void validateAvro(SchemaMetadata metadata, String payload) {
+    private void validateAvro(SchemaMetadata metadata, byte[] avroPayload) {
         try {
             Schema schema = new Schema.Parser().parse(metadata.schemaDefinition());
             GenericDatumReader<GenericRecord> reader = new GenericDatumReader<>(schema);
-            reader.read(null, DecoderFactory.get().jsonDecoder(schema, payload));
+            reader.read(null, DecoderFactory.get().binaryDecoder(avroPayload, null));
         } catch (Exception e) {
-            throw new SchemaValidationException("Avro validation failed", e);
+            throw new SchemaValidationException("Avro validation failed against EVENT_SCHEMA_DEFINITION", e);
         }
     }
 }

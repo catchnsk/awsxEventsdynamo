@@ -9,12 +9,14 @@ public class InboundMessageContext {
     private final String payload;
     private final Map<String, Object> headers;
     private final String fallbackPartitionKey;
+    private final String contentType;
 
-    public InboundMessageContext(String schemaId, String payload, Map<String, Object> headers, String fallbackPartitionKey) {
+    public InboundMessageContext(String schemaId, String payload, Map<String, Object> headers, String fallbackPartitionKey, String contentType) {
         this.schemaId = schemaId;
         this.payload = payload;
         this.headers = headers == null ? Collections.emptyMap() : Map.copyOf(headers);
         this.fallbackPartitionKey = fallbackPartitionKey;
+        this.contentType = contentType;
     }
 
     public Optional<String> schemaId() {
@@ -31,5 +33,9 @@ public class InboundMessageContext {
 
     public Optional<String> fallbackPartitionKey() {
         return Optional.ofNullable(fallbackPartitionKey);
+    }
+
+    public String contentType() {
+        return contentType;
     }
 }

@@ -8,8 +8,11 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.jms.config.DefaultJmsListenerContainerFactory;
-import org.springframework.jms.config.JmsListenerContainerFactory;
 import org.springframework.jms.connection.CachingConnectionFactory;
+import org.springframework.stereotype.Component;
+
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Configuration
 public class JmsConfig {
@@ -18,24 +21,44 @@ public class JmsConfig {
 
     @Bean
     @ConditionalOnProperty(name = "listener.source.type", havingValue = "amq", matchIfMissing = true)
-    public ConnectionFactory amqConnectionFactory(ListenerProperties properties) {
-        ActiveMQConnectionFactory factory = new ActiveMQConnectionFactory(properties.getSource().getAmq().getBrokerUrl());
-        if (properties.getSource().getAmq().getUsername() != null) {
-            factory.setUserName(properties.getSource().getAmq().getUsername());
-            factory.setPassword(properties.getSource().getAmq().getPassword());
-        }
-        factory.setTrustAllPackages(true);
-        return new CachingConnectionFactory(factory);
+    public ConnectionFactoryManager connectionFactoryManager(ListenerProperties properties) {
+        return new ConnectionFactoryManager(properties);
     }
 
-    @Bean
-    @ConditionalOnProperty(name = "listener.source.type", havingValue = "amq", matchIfMissing = true)
-    public JmsListenerContainerFactory<?> amqListenerContainerFactory(ConnectionFactory connectionFactory) {
-        DefaultJmsListenerContainerFactory factory = new DefaultJmsListenerContainerFactory();
-        factory.setConnectionFactory(connectionFactory);
-        factory.setConcurrency("3-10");
-        factory.setSessionTransacted(true);
-        factory.setErrorHandler(t -> log.error("JMS listener error", t));
-        return factory;
+    @Component
+    public static class ConnectionFactoryManager {
+
+        private final Map<String, ConnectionFactory> connectionFactories = new ConcurrentHashMap<>();
+        private final Map<String, DefaultJmsListenerContainerFactory> containerFactories = new ConcurrentHashMap<>();
+        private final ListenerProperties properties;
+
+        public ConnectionFactoryManager(ListenerProperties properties) {
+            this.properties = properties;
+        }
+
+        public ConnectionFactory getConnectionFactory(ListenerProperties.QueueConfig queueConfig) {
+            return connectionFactories.computeIfAbsent(queueConfig.getBrokerUrl(), brokerUrl -> {
+                log.info("Creating connection factory for broker: {}", brokerUrl);
+                ActiveMQConnectionFactory factory = new ActiveMQConnectionFactory(brokerUrl);
+                if (queueConfig.getUsername() != null) {
+                    factory.setUserName(queueConfig.getUsername());
+                    factory.setPassword(queueConfig.getPassword());
+                }
+                factory.setTrustAllPackages(true);
+                return new CachingConnectionFactory(factory);
+            });
+        }
+
+        public DefaultJmsListenerContainerFactory getContainerFactory(ListenerProperties.QueueConfig queueConfig) {
+            return containerFactories.computeIfAbsent(queueConfig.getBrokerUrl(), brokerUrl -> {
+                log.info("Creating container factory for broker: {}", brokerUrl);
+                DefaultJmsListenerContainerFactory factory = new DefaultJmsListenerContainerFactory();
+                factory.setConnectionFactory(getConnectionFactory(queueConfig));
+                factory.setConcurrency("3-10");
+                factory.setSessionTransacted(true);
+                factory.setErrorHandler(t -> log.error("JMS listener error for broker {}", brokerUrl, t));
+                return factory;
+            });
+        }
     }
 }

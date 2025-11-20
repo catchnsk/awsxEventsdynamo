@@ -20,22 +20,30 @@ public class TransformationService {
         this.jsonToAvroConverter = jsonToAvroConverter;
     }
 
-    public byte[] applyTransformations(SchemaMetadata metadata, String payload) {
-        if (!metadata.transformationRequired()) {
-            return payload.getBytes(StandardCharsets.UTF_8);
-        }
+    public byte[] applyTransformations(SchemaMetadata metadata, String payload, String contentType) {
+        // Step 1: Parse based on contentType and normalize to JSON
+        String normalizedJson = parseToJson(payload, contentType);
 
-        String normalizedJson = switch (metadata.formatType()) {
-            case SOAP -> soapToJsonConverter.convert(payload);
-            case XML -> xmlToJsonConverter.convert(payload);
-            case JSON -> payload;
-            case AVRO -> payload;
-        };
-
-        if (metadata.formatType() == SchemaMetadata.FormatType.AVRO) {
-            return payload.getBytes(StandardCharsets.UTF_8);
-        }
-
+        // Step 2: Convert JSON to Avro format
         return jsonToAvroConverter.convert(normalizedJson, metadata);
+    }
+
+    private String parseToJson(String payload, String contentType) {
+        if (contentType == null || contentType.isBlank()) {
+            throw new IllegalArgumentException("Content-Type is required");
+        }
+
+        String normalizedContentType = contentType.toLowerCase();
+
+        if (normalizedContentType.startsWith("application/json")) {
+            return payload;
+        } else if (normalizedContentType.startsWith("application/xml") ||
+                   normalizedContentType.startsWith("text/xml")) {
+            return xmlToJsonConverter.convert(payload);
+        } else if (normalizedContentType.startsWith("application/soap+xml")) {
+            return soapToJsonConverter.convert(payload);
+        } else {
+            throw new IllegalArgumentException("Unsupported content-type: " + contentType);
+        }
     }
 }

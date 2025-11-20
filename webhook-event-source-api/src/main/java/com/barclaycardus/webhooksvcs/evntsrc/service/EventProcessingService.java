@@ -44,23 +44,31 @@ public class EventProcessingService {
 
     public void handle(InboundMessageContext context) {
         String schemaId = context.schemaId()
-                .orElseThrow(() -> new ProcessingException("Missing schemaId header"));
+                .orElseThrow(() -> new ProcessingException("Missing schemaId in configuration"));
+        String contentType = context.contentType();
         try {
+            // Step 1: Resolve schema from DynamoDB
             SchemaMetadata schema = schemaService.resolve(schemaId);
-            schemaValidator.validate(schema, context.payload());
-            byte[] payload = transformationService.applyTransformations(schema, context.payload());
+
+            // Step 2: Transform payload to Avro (parse XML/JSON/SOAP -> JSON -> Avro)
+            byte[] avroPayload = transformationService.applyTransformations(schema, context.payload(), contentType);
+
+            // Step 3: Validate Avro against EVENT_SCHEMA_DEFINITION
+            schemaValidator.validate(schema, avroPayload);
+
+            // Step 4: Publish to MSK topic based on EVENT_NAME
             String partitionKey = determinePartitionKey(context);
-            publisher.publish(new ProcessedEvent(schema, payload, partitionKey));
+            publisher.publish(new ProcessedEvent(schema, avroPayload, partitionKey));
         } catch (SchemaValidationException validationException) {
-            log.warn("Validation error for schema {}", schemaId, validationException);
+            log.warn("Validation error for schema {} with contentType {}", schemaId, contentType, validationException);
             retryPublisher.sendToDlq(schemaId, context.payload().getBytes(StandardCharsets.UTF_8), validationException.getMessage());
             throw validationException;
         } catch (TransformationException transformationException) {
-            log.error("Transformation error for schema {}", schemaId, transformationException);
+            log.error("Transformation error for schema {} with contentType {}", schemaId, contentType, transformationException);
             retryPublisher.sendToDlq(schemaId, context.payload().getBytes(StandardCharsets.UTF_8), transformationException.getMessage());
             throw transformationException;
         } catch (Exception exception) {
-            log.error("Unexpected processing error for schema {}", schemaId, exception);
+            log.error("Unexpected processing error for schema {} with contentType {}", schemaId, contentType, exception);
             retryPublisher.sendToRetry(schemaId, context.payload().getBytes(StandardCharsets.UTF_8));
             throw new ProcessingException("Unexpected error", exception);
         }

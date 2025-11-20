@@ -6,13 +6,18 @@ listener:
   source:
     type: amq # amq or kafka
     amq:
-      broker-url: ssl://amq.company.com:61616
-      queue: customer.updates
+      queues:
+        - name: customer.updates
+          schema-id: customer-schema-v1
+          content-type: application/json
+          broker-url: ssl://amq.company.com:61616
     kafka:
-      bootstrap-servers: broker1:9092
-      group-id: webhook-event-source-api
       topics:
-        - customer_source_topic
+        - name: customer_source_topic
+          schema-id: customer-schema-v1
+          content-type: application/json
+          bootstrap-servers: broker1:9092
+          group-id: webhook-event-source-api
   aws:
     region: us-east-1
     dynamo-db:
@@ -27,3 +32,50 @@ listener:
 logging:
   level:
     com.barclaycardus.webhooksvcs.evntsrc: INFO
+
+# # listener:
+#     source:
+#       type: amq
+#       amq:
+#         queues:
+#           - name: order.queue
+#             schemaId: order-schema-v1
+#             contentType: application/json
+#             brokerUrl: tcp://broker1.example.com:61616
+#             username: user1
+#             password: pass1
+#           - name: invoice.queue
+#             schemaId: invoice-schema-v2
+#             contentType: application/xml
+#             brokerUrl: tcp://broker2.example.com:61616
+#             username: user2
+#             password: pass2
+#           - name: payment.queue
+#             schemaId: payment-schema-v1
+#             contentType: application/json
+#             brokerUrl: tcp://broker1.example.com:61616  # Reuses broker1 connection
+
+# listener:
+#     source:
+#       type: kafka
+#       kafka:
+#         topics:
+#           - name: orders.topic
+#             schemaId: order-schema-v1
+#             contentType: application/json
+#             bootstrapServers:
+#   kafka-cluster1.example.com:9092
+#             groupId: order-consumer-group
+#           - name: payments.topic
+#             schemaId: payment-schema-v1
+#             contentType: application/json
+#             bootstrapServers:
+#   kafka-cluster2.example.com:9092
+#             groupId: payment-consumer-group
+#           - name: invoices.topic
+#             schemaId: invoice-schema-v2
+#             contentType: application/xml
+#             bootstrapServers:
+#   kafka-cluster1.example.com:9092  # Reuses 
+#   cluster1 connection
+#             groupId: invoice-consumer-group

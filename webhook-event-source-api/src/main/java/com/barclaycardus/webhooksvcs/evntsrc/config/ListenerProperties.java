@@ -87,8 +87,8 @@ public class ListenerProperties {
         private String brokerUrl = "tcp://localhost:61616";
         private String username;
         private String password;
-        @NotBlank
-        private String queue = "listener.queue";
+        @NotEmpty
+        private List<QueueConfig> queues = List.of(new QueueConfig());
 
         public String getBrokerUrl() {
             return brokerUrl;
@@ -114,29 +114,143 @@ public class ListenerProperties {
             this.password = password;
         }
 
-        public String getQueue() {
-            return queue;
+        public List<QueueConfig> getQueues() {
+            return queues;
         }
 
-        public void setQueue(String queue) {
-            this.queue = queue;
+        public void setQueues(List<QueueConfig> queues) {
+            this.queues = queues;
+        }
+    }
+
+    public static class QueueConfig {
+        @NotBlank
+        private String name = "listener.queue";
+        @NotBlank
+        private String schemaId;
+        @NotBlank
+        private String contentType = "application/json";
+        @NotBlank
+        private String brokerUrl = "tcp://localhost:61616";
+        private String username;
+        private String password;
+
+        public String getName() {
+            return name;
+        }
+
+        public void setName(String name) {
+            this.name = name;
+        }
+
+        public String getSchemaId() {
+            return schemaId;
+        }
+
+        public void setSchemaId(String schemaId) {
+            this.schemaId = schemaId;
+        }
+
+        public String getContentType() {
+            return contentType;
+        }
+
+        public void setContentType(String contentType) {
+            this.contentType = contentType;
+        }
+
+        public String getBrokerUrl() {
+            return brokerUrl;
+        }
+
+        public void setBrokerUrl(String brokerUrl) {
+            this.brokerUrl = brokerUrl;
+        }
+
+        public String getUsername() {
+            return username;
+        }
+
+        public void setUsername(String username) {
+            this.username = username;
+        }
+
+        public String getPassword() {
+            return password;
+        }
+
+        public void setPassword(String password) {
+            this.password = password;
         }
     }
 
     public static class Kafka {
         @NotEmpty
-        private List<String> topics = List.of("listener.source.topic");
+        private List<TopicConfig> topics = List.of(new TopicConfig());
         @NotBlank
         private String bootstrapServers = "localhost:9092";
         @NotBlank
         private String groupId = "webhook-event-source-api";
 
-        public List<String> getTopics() {
+        public List<TopicConfig> getTopics() {
             return topics;
         }
 
-        public void setTopics(List<String> topics) {
+        public void setTopics(List<TopicConfig> topics) {
             this.topics = topics;
+        }
+
+        public String getBootstrapServers() {
+            return bootstrapServers;
+        }
+
+        public void setBootstrapServers(String bootstrapServers) {
+            this.bootstrapServers = bootstrapServers;
+        }
+
+        public String getGroupId() {
+            return groupId;
+        }
+
+        public void setGroupId(String groupId) {
+            this.groupId = groupId;
+        }
+    }
+
+    public static class TopicConfig {
+        @NotBlank
+        private String name = "listener.source.topic";
+        @NotBlank
+        private String schemaId;
+        @NotBlank
+        private String contentType = "application/json";
+        @NotBlank
+        private String bootstrapServers = "localhost:9092";
+        @NotBlank
+        private String groupId = "webhook-event-source-api";
+
+        public String getName() {
+            return name;
+        }
+
+        public void setName(String name) {
+            this.name = name;
+        }
+
+        public String getSchemaId() {
+            return schemaId;
+        }
+
+        public void setSchemaId(String schemaId) {
+            this.schemaId = schemaId;
+        }
+
+        public String getContentType() {
+            return contentType;
+        }
+
+        public void setContentType(String contentType) {
+            this.contentType = contentType;
         }
 
         public String getBootstrapServers() {
