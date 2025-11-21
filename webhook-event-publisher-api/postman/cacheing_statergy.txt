@@ -1,0 +1,104 @@
+    DynamoDB Schema Caching Implementation
+Overview
+Implement caching for DynamoDB schema lookups using Caffeine cache with TTL-based expiration and optional background refresh. Since the service uses reactive types (Mono/Flux), we'll create a custom reactive cache wrapper that works with Caffeine.
+
+Implementation Steps
+1. Add Spring Cache Dependencies
+File: webhook-event-publisher-api/api/pom.xml
+Add spring-boot-starter-cache dependency
+Caffeine is already present (v3.1.8)
+2. Update Configuration Properties
+File: webhook-event-publisher-api/api/src/main/java/com/beewaxus/webhooksvcs/pubsrc/config/WebhooksProperties.java
+Extend DynamoProperties record to include:
+Duration cacheTtl (already exists but unused)
+Duration refreshAfterWrite (optional background refresh interval)
+Long maximumSize (max cache entries, default 1000)
+Boolean enableCache (feature flag, default true)
+3. Update application.yaml
+File: webhook-event-publisher-api/api/src/main/resources/application.yaml
+Update webhooks.dynamodb section:
+cache-ttl: PT24H (default 24 hours, configurable)
+refresh-after-write: PT23H (optional, refresh 1 hour before expiration)
+maximum-size: 1000 (max cached schemas)
+enable-cache: true (enable/disable caching)
+4. Create Reactive Cache Wrapper
+New File: webhook-event-publisher-api/api/src/main/java/com/beewaxus/webhooksvcs/pubsrc/cache/ReactiveCache.java
+Interface for reactive caching operations
+Methods: get(key, supplier), evict(key), evictAll(), stats()
+5. Create Caffeine Reactive Cache Implementation
+New File: webhook-event-publisher-api/api/src/main/java/com/beewaxus/webhooksvcs/pubsrc/cache/CaffeineReactiveCache.java
+Implements ReactiveCache interface
+Uses Caffeine Cache with:
+expireAfterWrite(ttl) for TTL
+refreshAfterWrite(refreshAfterWrite) for background refresh
+maximumSize(maximumSize) for size limits
+Wraps Caffeine operations to return Mono<T> and Flux<T>
+Handles cache misses by calling the supplier function
+Provides cache statistics
+6. Create Cache Configuration
+New File: webhook-event-publisher-api/api/src/main/java/com/beewaxus/webhooksvcs/pubsrc/config/CacheConfig.java
+@Configuration class
+@EnableCaching annotation
+Bean method to create CaffeineReactiveCache instances:
+schemaDefinitionCache() - for SchemaDefinition objects
+schemaDetailCache() - for SchemaDetailResponse objects
+allSchemasCache() - for List<SchemaDefinition> (from fetchAllSchemas)
+Configure each cache with properties from WebhooksProperties
+7. Update DynamoSchemaService
+File: webhook-event-publisher-api/api/src/main/java/com/beewaxus/webhooksvcs/pubsrc/schema/DynamoSchemaService.java
+Inject ReactiveCache instances (or a cache manager)
+Update fetchSchema(SchemaReference):
+Check cache first using reference.partitionKey() + "#" + reference.sortKey() as key
+If cache miss, fetch from DynamoDB and cache result
+Return cached Mono<SchemaDefinition>
+Update fetchAllSchemas():
+Use a single cache key like "ALL_SCHEMAS"
+Cache the entire Flux<SchemaDefinition> result (convert to list, cache list, return as Flux)
+Update fetchSchemaBySchemaId(String):
+Use schemaId as cache key
+Cache SchemaDetailResponse objects
+Add cache eviction on errors (optional - only if DynamoDB returns not found)
+Add logging for cache hits/misses
+8. Handle Background Refresh
+In CaffeineReactiveCache, implement refreshAfterWrite:
+When cache entry is accessed and is within refresh window, trigger async refresh
+Return stale value immediately, refresh in background
+Use Caffeine's AsyncCacheLoader or manual refresh logic
+9. Add Cache Statistics Endpoint (Optional)
+File: webhook-event-publisher-api/api/src/main/java/com/beewaxus/webhooksvcs/pubsrc/controller/CacheController.java (optional)
+Expose cache statistics via actuator or custom endpoint
+Show hit rate, miss rate, size, eviction count
+10. Update Tests
+File: webhook-event-publisher-api/api/src/test/java/com/beewaxus/webhooksvcs/pubsrc/controller/EventControllerTest.java
+Mock ReactiveCache in test configuration
+Verify cache is used in integration tests
+Key Design Decisions
+Reactive Cache Wrapper: Since Spring Cache doesn't support Mono/Flux natively, we create a custom reactive wrapper around Caffeine.
+Cache Keys:
+fetchSchema: "{domain}#{eventName}#{version}" or "{PK}#{SK}"
+fetchSchemaBySchemaId: "SCHEMA_ID:{schemaId}"
+fetchAllSchemas: "ALL_SCHEMAS"
+TTL vs Refresh: 
+TTL expires entries after configured time
+refreshAfterWrite triggers background refresh before expiration
+Both are configurable
+Error Handling: 
+Cache errors should not break the flow
+Fall back to DynamoDB on cache errors
+Log cache errors but don't propagate
+Cache Invalidation: 
+Manual eviction can be added later if needed
+For now, rely on TTL-based expiration
+Files to Create/Modify
+New Files:
+
+ReactiveCache.java - Interface
+CaffeineReactiveCache.java - Implementation
+CacheConfig.java - Configuration
+Modified Files:
+
+pom.xml - Add spring-boot-starter-cache
+WebhooksProperties.java - Add cache configuration fields
+application.yaml - Add cache configuration
+DynamoSchemaService.java - Integrate caching
+EventControllerTest.java - Update tests
