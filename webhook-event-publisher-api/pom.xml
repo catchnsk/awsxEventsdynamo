@@ -19,8 +19,9 @@
     <description>Parent project that aggregates the Event Validation API service and OpenAPI specification modules</description>
 
     <modules>
-        <module>api</module>
         <module>oas-spec</module>
+        <module>api-models</module>
+        <module>api</module>
     </modules>
 
     <properties>
