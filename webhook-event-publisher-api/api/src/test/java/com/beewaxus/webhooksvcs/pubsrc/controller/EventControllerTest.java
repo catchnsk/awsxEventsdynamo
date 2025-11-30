@@ -298,7 +298,7 @@ class EventControllerTest {
                                 "1.0",
                                 "Test header",
                                 simpleAvroSchema, // eventSchemaDefinitionAvro
-                                simpleAvroSchema, // eventSchemaDefinition
+                                null, // eventSchemaDefinition (null = use Avro)
                                 null,
                                 "INACTIVE",
                                 "NO",
@@ -320,7 +320,7 @@ class EventControllerTest {
                                 "1.0",
                                 "Test header",
                                 simpleAvroSchema, // eventSchemaDefinitionAvro
-                                simpleAvroSchema, // eventSchemaDefinition
+                                null, // eventSchemaDefinition (null = use Avro)
                                 null,
                                 "ACTIVE",
                                 "NO",
@@ -342,7 +342,7 @@ class EventControllerTest {
                                 "1.0",
                                 "Test header",
                                 simpleAvroSchema, // eventSchemaDefinitionAvro
-                                simpleAvroSchema, // eventSchemaDefinition
+                                null, // eventSchemaDefinition (null = use Avro)
                                 null,
                                 "ACTIVE",
                                 "NO",
@@ -436,7 +436,7 @@ class EventControllerTest {
                         ));
                     }
 
-                    // Default: Return valid schema for SCHEMA_0001
+                    // Default: Return valid schema for SCHEMA_0001 (Avro schema)
                     String avroSchema = "{\"type\":\"record\",\"name\":\"TestEvent\",\"fields\":[{\"name\":\"customerId\",\"type\":\"string\"},{\"name\":\"status\",\"type\":\"string\"}]}";
 
                     return Mono.just(new SchemaDetailResponse(
@@ -445,8 +445,8 @@ class EventControllerTest {
                             "TestEvent",
                             "1.0",
                             "Test header",
-                            avroSchema, // eventSchemaDefinitionAvro (fallback)
-                            avroSchema, // eventSchemaDefinition (primary - used for validation)
+                            avroSchema, // eventSchemaDefinitionAvro
+                            null, // eventSchemaDefinition (null = use Avro schema)
                             null,
                             "ACTIVE",
                             "NO",

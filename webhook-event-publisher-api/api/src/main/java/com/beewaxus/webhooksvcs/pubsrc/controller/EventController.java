@@ -2,6 +2,9 @@ package com.beewaxus.webhooksvcs.pubsrc.controller;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.beewaxus.webhooksvcs.api.DefaultApi;
+import com.beewaxus.webhooksvcs.api.model.AckResponse;
+import com.beewaxus.webhooksvcs.api.model.SchemaMetadata;
 import com.beewaxus.webhooksvcs.pubsrc.config.WebhooksProperties;
 import com.beewaxus.webhooksvcs.pubsrc.converter.AvroSerializer;
 import com.beewaxus.webhooksvcs.pubsrc.converter.FormatConverter;
@@ -23,11 +26,14 @@ import org.apache.avro.generic.GenericDatumReader;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.io.DecoderFactory;
 import org.apache.avro.io.JsonDecoder;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.server.ServerWebExchange;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
@@ -42,7 +48,7 @@ import static org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR;
 
 @RestController
 @Validated
-public class EventController {
+public class EventController implements DefaultApi {
 
     private final SchemaService schemaService;
     private final AvroSchemaValidator avroSchemaValidator;
@@ -71,24 +77,27 @@ public class EventController {
         this.properties = properties;
     }
 
-    @PostMapping(value = "/events/{domain}/{eventName}/{version}",
-                 consumes = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE, "application/avro"})
-    public Mono<ResponseEntity<EventAcceptedResponse>> publishEvent(
-            @PathVariable @NotBlank String domain,
-            @PathVariable @NotBlank String eventName,
-            @PathVariable @NotBlank String version,
-            @RequestHeader(value = "Content-Type", defaultValue = MediaType.APPLICATION_JSON_VALUE) String contentType,
-            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
-            @RequestBody String rawPayload,
-            @RequestHeader Map<String, String> headers) {
+    @Override
+    public Mono<ResponseEntity<AckResponse>> publishEvent(
+            String domain,
+            String eventName,
+            String version,
+            Mono<Map<String, Object>> requestBody,
+            String contentType,
+            UUID xEventId,
+            String idempotencyKey,
+            ServerWebExchange exchange) {
 
         SchemaReference reference = new SchemaReference(domain, eventName, version);
-        String eventId = headers.getOrDefault("X-Event-Id", UUID.randomUUID().toString());
+        String eventId = xEventId != null ? xEventId.toString() : UUID.randomUUID().toString();
         String idempotencyKeyValue = idempotencyKey != null ? idempotencyKey : eventId;
+        contentType = contentType != null ? contentType : MediaType.APPLICATION_JSON_VALUE;
         SchemaFormat format = SchemaFormat.fromContentType(contentType);
 
-        return Mono.just(rawPayload)
+        return requestBody
                 .switchIfEmpty(Mono.error(new ResponseStatusException(BAD_REQUEST, "Body required")))
+                .flatMap(bodyMap -> Mono.fromCallable(() -> objectMapper.writeValueAsString(bodyMap))
+                        .onErrorMap(e -> new ResponseStatusException(BAD_REQUEST, "Invalid JSON payload: " + e.getMessage())))
                 .flatMap(payload -> schemaService.fetchSchema(reference)
                         .switchIfEmpty(Mono.error(new ResponseStatusException(NOT_FOUND, "Schema not found")))
                         .onErrorMap(DynamoDbException.class, e -> {
@@ -124,24 +133,27 @@ public class EventController {
                         })
                         .onErrorMap(KafkaPublishException.class, e ->
                             new ResponseStatusException(SERVICE_UNAVAILABLE, "Kafka is unavailable: " + e.getMessage(), e)))
-                .map(id -> ResponseEntity.accepted().body(new EventAcceptedResponse(id)));
+                .map(id -> ResponseEntity.accepted().body(new AckResponse(UUID.fromString(id))));
     }
 
-    @PostMapping(value = "/events/schema_id/{schemaId}",
-                 consumes = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE, "application/avro"})
-    public Mono<ResponseEntity<EventAcceptedResponse>> publishEventBySchemaId(
-            @PathVariable @NotBlank String schemaId,
-            @RequestHeader(value = "Content-Type", defaultValue = MediaType.APPLICATION_JSON_VALUE) String contentType,
-            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
-            @RequestBody String rawPayload,
-            @RequestHeader Map<String, String> headers) {
+    @Override
+    public Mono<ResponseEntity<AckResponse>> publishEventBySchemaId(
+            String schemaId,
+            Mono<Map<String, Object>> requestBody,
+            String contentType,
+            UUID xEventId,
+            String idempotencyKey,
+            ServerWebExchange exchange) {
 
-        String eventId = headers.getOrDefault("X-Event-Id", UUID.randomUUID().toString());
+        String eventId = xEventId != null ? xEventId.toString() : UUID.randomUUID().toString();
         String idempotencyKeyValue = idempotencyKey != null ? idempotencyKey : eventId;
+        contentType = contentType != null ? contentType : MediaType.APPLICATION_JSON_VALUE;
         SchemaFormat format = SchemaFormat.fromContentType(contentType);
 
-        return Mono.just(rawPayload)
+        return requestBody
                 .switchIfEmpty(Mono.error(new ResponseStatusException(BAD_REQUEST, "Body required")))
+                .flatMap(bodyMap -> Mono.fromCallable(() -> objectMapper.writeValueAsString(bodyMap))
+                        .onErrorMap(e -> new ResponseStatusException(BAD_REQUEST, "Invalid JSON payload: " + e.getMessage())))
                 .flatMap(payload -> schemaService.fetchSchemaBySchemaId(schemaId)
                         .switchIfEmpty(Mono.error(new ResponseStatusException(NOT_FOUND, "Schema not found for schemaId: " + schemaId)))
                         .onErrorMap(DynamoDbException.class, e -> {
@@ -168,25 +180,24 @@ public class EventController {
                                 return Mono.error(new ResponseStatusException(BAD_REQUEST, "Topic name not configured for schema"));
                             }
                             
-                            // Validate schema definition exists (prefer EVENT_SCHEMA_DEFINITION, fallback to EVENT_SCHEMA_DEFINITION_AVRO)
-                            String avroSchemaString = schemaDetail.eventSchemaDefinition() != null && !schemaDetail.eventSchemaDefinition().isEmpty()
-                                    ? schemaDetail.eventSchemaDefinition()
-                                    : schemaDetail.eventSchemaDefinitionAvro();
-                            
-                            if (avroSchemaString == null || avroSchemaString.isEmpty()) {
-                                return Mono.error(new ResponseStatusException(BAD_REQUEST, "Schema definition not configured for this event"));
-                            }
-                            
                             // Convert SchemaDetailResponse to SchemaDefinition for validation
                             SchemaDefinition schemaDefinition = schemaDetailToDefinition(schemaDetail);
-                            
+
+                            // Validate that at least one schema definition exists
+                            boolean hasJsonSchema = schemaDefinition.jsonSchema() != null && !schemaDefinition.jsonSchema().isEmpty();
+                            boolean hasAvroSchema = schemaDefinition.avroSchema() != null && !schemaDefinition.avroSchema().isEmpty();
+
+                            if (!hasJsonSchema && !hasAvroSchema) {
+                                return Mono.error(new ResponseStatusException(BAD_REQUEST, "Schema definition not configured for this event"));
+                            }
+
                             // Create SchemaReference for EventEnvelope
                             SchemaReference reference = new SchemaReference(
                                     schemaDetail.producerDomain(),
                                     schemaDetail.eventName(),
                                     schemaDetail.version()
                             );
-                            
+
                             // Step 1: Convert payload to JSON
                             return convertToJson(payload, format)
                                     .flatMap(jsonNode -> {
@@ -198,7 +209,7 @@ public class EventController {
                                         } else {
                                             // Avro Schema validation flow
                                             return handleAvroSchemaValidationBySchemaId(jsonNode, schemaDefinition, reference,
-                                                    eventId, idempotencyKeyValue, format, schemaDetail.topicName(), schemaId, avroSchemaString);
+                                                    eventId, idempotencyKeyValue, format, schemaDetail.topicName(), schemaId, schemaDefinition.avroSchema());
                                         }
                                     })
                                     .onErrorMap(KafkaPublishException.class, e -> 
@@ -221,7 +232,7 @@ public class EventController {
                                         return throwable;
                                     });
                         }))
-                .map(id -> ResponseEntity.accepted().body(new EventAcceptedResponse(id)))
+                .map(id -> ResponseEntity.accepted().body(new AckResponse(UUID.fromString(id))))
                 .onErrorMap(throwable -> {
                     // Catch any unhandled exceptions and ensure they're properly mapped
                     if (throwable instanceof ResponseStatusException) {
@@ -521,5 +532,23 @@ public class EventController {
         };
     }
 
-    public record EventAcceptedResponse(String eventId) {}
+    // Additional methods from DefaultApi interface
+
+    @Override
+    public Mono<ResponseEntity<SchemaMetadata>> fetchSchema(String domain, String event, String version, ServerWebExchange exchange) {
+        // TODO: Implement fetchSchema method
+        return Mono.error(new ResponseStatusException(HttpStatus.NOT_IMPLEMENTED, "fetchSchema not yet implemented"));
+    }
+
+    @Override
+    public Mono<ResponseEntity<Flux<SchemaMetadata>>> getAllSchemas(ServerWebExchange exchange) {
+        // TODO: Implement getAllSchemas method
+        return Mono.error(new ResponseStatusException(HttpStatus.NOT_IMPLEMENTED, "getAllSchemas not yet implemented"));
+    }
+
+    @Override
+    public Mono<ResponseEntity<com.beewaxus.webhooksvcs.api.model.SchemaDetailResponse>> getSchemaBySchemaId(String schemaId, ServerWebExchange exchange) {
+        // TODO: Implement getSchemaBySchemaId method
+        return Mono.error(new ResponseStatusException(HttpStatus.NOT_IMPLEMENTED, "getSchemaBySchemaId not yet implemented"));
+    }
 }
