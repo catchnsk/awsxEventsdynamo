@@ -1,0 +1,454 @@
+openapi: 3.0.3
+info:
+  title: Event Validation API
+  version: 0.1.0
+  description: |
+    API for validating webhook events, retrieving schema metadata, and publishing to MSK ingress topics.
+
+    ## Schema Validation Support
+
+    This API supports two schema validation formats:
+
+    **JSON Schema Validation** (EVENT_SCHEMA_DEFINITION):
+    - When EVENT_SCHEMA_DEFINITION is present in DynamoDB, the system uses JSON Schema for validation
+    - Validated events are published to Kafka as JSON strings
+    - Suitable for flexible, human-readable event data
+
+    **Avro Schema Validation** (EVENT_SCHEMA_DEFINITION_AVRO):
+    - When only EVENT_SCHEMA_DEFINITION_AVRO is present, the system uses Avro Schema for validation
+    - Validated events are serialized to Avro binary format and published to Kafka
+    - Suitable for high-performance, compact event data
+
+    The system automatically determines which validation method to use based on which schema definition is present in DynamoDB.
+    If both are present, JSON Schema takes precedence.
+servers:
+  - url: https://api.mycorp.example
+    description: Production
+  - url: https://api.sandbox.mycorp.example
+    description: Sandbox
+paths:
+  /events/{domain}/{eventName}/{version}:
+    post:
+      summary: Validate and publish an event payload
+      description: >-
+        Validates an inbound payload against the configured schema (JSON Schema or Avro Schema) and publishes it to the matching MSK ingress topic.
+        If EVENT_SCHEMA_DEFINITION (JSON Schema) exists, validates with JSON Schema and publishes as JSON.
+        If only EVENT_SCHEMA_DEFINITION_AVRO exists, validates with Avro Schema and publishes as Avro binary.
+      operationId: publishEvent
+      parameters:
+        - name: domain
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Producer domain used for routing and topic derivation
+          example: demo
+        - name: eventName
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Logical event name (e.g., CustomerUpdated)
+          example: CustomerUpdated
+        - name: version
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Event schema version (e.g., v1)
+          example: v1
+        - name: Content-Type
+          in: header
+          required: false
+          schema:
+            type: string
+            enum: [application/json, application/xml, application/avro]
+          description: Format of the incoming payload (defaults to application/json)
+        - name: X-Event-Id
+          in: header
+          required: false
+          schema:
+            type: string
+            format: uuid
+          description: Optional event ID (generated if not provided)
+        - name: Idempotency-Key
+          in: header
+          required: false
+          schema:
+            type: string
+          description: Optional idempotency key for duplicate detection
+      requestBody:
+        required: true
+        description: Event payload in JSON, XML, or Avro format
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+          application/xml:
+            schema:
+              type: string
+          application/avro:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '202':
+          description: Event accepted and published to Kafka (as JSON or Avro binary depending on schema type)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AckResponse'
+        '400':
+          description: Validation failed or schema definition not configured
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Schema not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: DynamoDB table not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: Kafka or DynamoDB service unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /events/all:
+    get:
+      summary: List all active schemas
+      description: >-
+        Retrieves all active schema definitions from the event_schema table.
+        Returns a list of schema metadata including domain, event name, version, and schema definitions.
+      operationId: getAllSchemas
+      responses:
+        '200':
+          description: List of all active schemas
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SchemaMetadata'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /events/schema_id/{schemaId}:
+    get:
+      summary: Retrieve schema by EVENT_SCHEMA_ID
+      description: >-
+        Retrieves a complete schema definition from the event_schema DynamoDB table
+        by matching the EVENT_SCHEMA_ID attribute. Returns all schema metadata including
+        domain, event name, version, schema definitions (JSON, XML, Avro), sample events,
+        and administrative metadata.
+      operationId: getSchemaBySchemaId
+      parameters:
+        - name: schemaId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The EVENT_SCHEMA_ID value to search for (e.g., SCHEMA_0001, SCHEMA_TRANSACTION_CREATED_V1)
+          example: SCHEMA_0001
+      responses:
+        '200':
+          description: Schema found and returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaDetailResponse'
+        '404':
+          description: Schema not found for the given schemaId
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      summary: Publish event by schema ID
+      description: >-
+        Validates an inbound payload against the schema identified by EVENT_SCHEMA_ID and publishes to the configured Kafka topic.
+        If EVENT_SCHEMA_DEFINITION (JSON Schema) exists, validates with JSON Schema and publishes as JSON.
+        If only EVENT_SCHEMA_DEFINITION_AVRO exists, validates with Avro Schema and publishes as Avro binary.
+        The payload can be in JSON, XML, or Avro format (specified via Content-Type header).
+      operationId: publishEventBySchemaId
+      parameters:
+        - name: schemaId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The EVENT_SCHEMA_ID value to identify the schema
+          example: SCHEMA_0001
+        - name: Content-Type
+          in: header
+          required: false
+          schema:
+            type: string
+            enum: [application/json, application/xml, application/avro]
+          description: Format of the incoming payload (defaults to application/json)
+        - name: X-Event-Id
+          in: header
+          required: false
+          schema:
+            type: string
+            format: uuid
+          description: Optional event ID (generated if not provided)
+        - name: Idempotency-Key
+          in: header
+          required: false
+          schema:
+            type: string
+          description: Optional idempotency key for duplicate detection
+      requestBody:
+        required: true
+        description: Event payload in JSON, XML, or Avro format
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+          application/xml:
+            schema:
+              type: string
+          application/avro:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '202':
+          description: Event accepted and published to Kafka (as JSON or Avro binary depending on schema type)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AckResponse'
+        '400':
+          description: Validation failed, schema/topic inactive, or schema definition missing
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Schema not found for the given schemaId
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: DynamoDB table not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: Kafka or DynamoDB service unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /schemas/{domain}/{event}/{version}:
+    get:
+      summary: Retrieve schema metadata for a specific event version
+      operationId: fetchSchema
+      parameters:
+        - name: domain
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: event
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: version
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Schema metadata located
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaMetadata'
+        '404':
+          description: Schema not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+components:
+  schemas:
+    EventPayload:
+      type: object
+      required:
+        - eventId
+        - occurredAt
+        - data
+      properties:
+        eventId:
+          type: string
+          format: uuid
+        occurredAt:
+          type: string
+          format: date-time
+        correlationId:
+          type: string
+        schemaVersion:
+          type: string
+        data:
+          type: object
+          additionalProperties: true
+    AckResponse:
+      type: object
+      required:
+        - status
+        - eventId
+      properties:
+        status:
+          type: string
+          example: ACCEPTED
+        eventId:
+          type: string
+          format: uuid
+        enqueueTimestamp:
+          type: string
+          format: date-time
+    SchemaMetadata:
+      type: object
+      required:
+        - schemaId
+        - formatType
+      properties:
+        schemaId:
+          type: string
+          description: Unique schema identifier
+        formatType:
+          type: string
+          enum: [JSON_SCHEMA, AVRO_SCHEMA]
+          description: Indicates which schema format is used for validation and serialization
+        status:
+          type: string
+          enum: [ACTIVE, INACTIVE]
+        eventName:
+          type: string
+        producerDomain:
+          type: string
+        version:
+          type: string
+        jsonSchema:
+          type: string
+          description: JSON Schema definition (used when formatType is JSON_SCHEMA)
+          nullable: true
+        avroSchema:
+          type: string
+          description: Avro Schema definition (used when formatType is AVRO_SCHEMA)
+          nullable: true
+        updatedAt:
+          type: string
+          format: date-time
+          description: Timestamp when the schema was last updated
+    ErrorResponse:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+          example: VALIDATION_FAILED
+        message:
+          type: string
+        details:
+          type: array
+          items:
+            type: string
+    SchemaDetailResponse:
+      type: object
+      description: Complete schema metadata from DynamoDB including all attributes
+      properties:
+        eventSchemaId:
+          type: string
+          description: The EVENT_SCHEMA_ID identifier
+          example: SCHEMA_0001
+        producerDomain:
+          type: string
+          description: Producer domain name
+          example: payments
+        eventName:
+          type: string
+          description: Event name
+          example: transactionCreated
+        version:
+          type: string
+          description: Schema version
+          example: "1.0"
+        eventSchemaHeader:
+          type: string
+          description: Description of the event schema header
+        eventSchemaDefinition:
+          type: string
+          description: JSON Schema definition (EVENT_SCHEMA_DEFINITION). Used for JSON Schema validation when present.
+          nullable: true
+        eventSchemaDefinitionAvro:
+          type: string
+          description: Avro Schema definition (EVENT_SCHEMA_DEFINITION_AVRO). Used for Avro validation when EVENT_SCHEMA_DEFINITION is not present.
+          nullable: true
+        formatType:
+          type: string
+          enum: [JSON_SCHEMA, AVRO_SCHEMA]
+          description: >-
+            Determined schema format type:
+            JSON_SCHEMA - if eventSchemaDefinition is present (validates with JSON Schema, publishes as JSON)
+            AVRO_SCHEMA - if only eventSchemaDefinitionAvro is present (validates with Avro, publishes as Avro binary)
+        eventSample:
+          type: string
+          description: Sample event payload in JSON format
+        eventSchemaStatus:
+          type: string
+          enum: [ACTIVE, INACTIVE]
+          description: Status of the schema
+        hasSensitiveData:
+          type: string
+          enum: [YES, NO]
+          description: Indicates if the event contains sensitive data
+        producerSystemUsersId:
+          type: string
+          description: User ID who created the schema
+        topicName:
+          type: string
+          description: Kafka topic name
+          example: payments.transaction.created
+        topicStatus:
+          type: string
+          enum: [ACTIVE, INACTIVE]
+          description: Status of the Kafka topic
+        insertTs:
+          type: string
+          format: date-time
+          description: Timestamp when the schema was inserted
+          nullable: true
+        insertUser:
+          type: string
+          description: User who inserted the schema
+        updateTs:
+          type: string
+          format: date-time
+          description: Timestamp when the schema was last updated
+          nullable: true
+        updateUser:
+          type: string
+          description: User who last updated the schema
