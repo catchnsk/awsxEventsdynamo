@@ -4,7 +4,14 @@ import java.time.Instant;
 
 public record SchemaDefinition(
         SchemaReference reference,
-        String avroSchema,
+        String jsonSchema,         // JSON Schema from EVENT_SCHEMA_DEFINITION
+        String avroSchema,         // Avro Schema from EVENT_SCHEMA_DEFINITION_AVRO
+        SchemaFormatType formatType, // Determines validation and serialization format
         boolean active,
         Instant updatedAt
-) {}
+) {
+    // Backward compatibility: use Avro schema if JSON schema is not available
+    public String getValidationSchema() {
+        return formatType == SchemaFormatType.JSON_SCHEMA ? jsonSchema : avroSchema;
+    }
+}

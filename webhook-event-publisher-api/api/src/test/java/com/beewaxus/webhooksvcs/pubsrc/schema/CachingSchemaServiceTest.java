@@ -48,7 +48,7 @@ class CachingSchemaServiceTest {
     @Test
     void fetchSchema_UsesCachedValueOnSubsequentCalls() {
         SchemaReference reference = new SchemaReference("demo", "CustomerUpdated", "v1");
-        SchemaDefinition schemaDefinition = new SchemaDefinition(reference, "{}", true, Instant.now());
+        SchemaDefinition schemaDefinition = new SchemaDefinition(reference, null, "{}", SchemaFormatType.AVRO_SCHEMA, true, Instant.now());
 
         when(delegate.fetchSchema(reference)).thenReturn(Mono.just(schemaDefinition));
 
@@ -119,7 +119,7 @@ class CachingSchemaServiceTest {
 
         CachingSchemaService disabledService = new CachingSchemaService(delegate, disabledProps);
         SchemaReference reference = new SchemaReference("demo", "CustomerUpdated", "v1");
-        SchemaDefinition schemaDefinition = new SchemaDefinition(reference, "{}", true, Instant.now());
+        SchemaDefinition schemaDefinition = new SchemaDefinition(reference, null, "{}", SchemaFormatType.AVRO_SCHEMA, true, Instant.now());
 
         when(delegate.fetchSchema(reference)).thenReturn(Mono.just(schemaDefinition));
 
@@ -137,7 +137,7 @@ class CachingSchemaServiceTest {
     @Test
     void evictAndReload_ClearsAndReloadsCache() {
         SchemaReference reference = new SchemaReference("demo", "CustomerUpdated", "v1");
-        SchemaDefinition schemaDefinition = new SchemaDefinition(reference, "{}", true, Instant.now());
+        SchemaDefinition schemaDefinition = new SchemaDefinition(reference, null, "{}", SchemaFormatType.AVRO_SCHEMA, true, Instant.now());
 
         when(delegate.fetchSchema(reference)).thenReturn(Mono.just(schemaDefinition));
         when(delegate.fetchAllSchemas()).thenReturn(Flux.just(schemaDefinition));

@@ -1,6 +1,7 @@
 package com.beewaxus.webhooksvcs.pubsrc.publisher;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.beewaxus.webhooksvcs.pubsrc.config.WebhooksProperties;
 import com.beewaxus.webhooksvcs.pubsrc.model.EventEnvelope;
@@ -109,6 +110,44 @@ public class KafkaEventPublisher implements EventPublisher {
 
     private CompletableFuture<SendResult<String, byte[]>> sendAvro(EventEnvelope envelope, String topicName, byte[] avroBytes) {
         return avroKafkaTemplate.send(topicName, envelope.eventId(), avroBytes).toCompletableFuture();
+    }
+
+    @Override
+    public Mono<String> publishJson(EventEnvelope envelope, String topicName, JsonNode jsonPayload) {
+        if (topicName == null || topicName.isEmpty()) {
+            return Mono.error(new IllegalArgumentException("Topic name cannot be null or empty"));
+        }
+
+        Duration timeout = properties.kafka().getPublishTimeout();
+        int maxRetries = properties.kafka().getMaxRetries();
+        Duration retryDelay = properties.kafka().getRetryBackoffInitialDelay();
+
+        return Mono.fromCallable(() -> objectMapper.writeValueAsString(jsonPayload))
+                .flatMap(jsonString -> Mono.fromFuture(sendJson(envelope, topicName, jsonString))
+                        .timeout(timeout)
+                        .retryWhen(Retry.backoff(maxRetries, retryDelay)
+                                .filter(throwable -> throwable instanceof org.apache.kafka.common.errors.TimeoutException
+                                        || (throwable.getCause() != null && throwable.getCause() instanceof org.apache.kafka.common.errors.TimeoutException)
+                                        || throwable instanceof org.apache.kafka.common.errors.RetriableException))
+                        .doOnError(error -> log.error("Failed to publish JSON event {} to topic {}: {}",
+                                envelope.eventId(), topicName, error.getMessage(), error))
+                        .onErrorMap(throwable -> {
+                            if (throwable instanceof org.apache.kafka.common.errors.TimeoutException
+                                    || throwable instanceof java.util.concurrent.TimeoutException
+                                    || (throwable.getCause() != null && throwable.getCause() instanceof org.apache.kafka.common.errors.TimeoutException)) {
+                                return new KafkaPublishException("Kafka publish timeout - broker may be unavailable for topic: " + topicName, throwable);
+                            }
+                            return new KafkaPublishException("Failed to publish JSON event to Kafka topic " + topicName + ": " + throwable.getMessage(), throwable);
+                        })
+                        .map(result -> {
+                            RecordMetadata metadata = result.getRecordMetadata();
+                            log.debug("Published JSON event {} to {}-{}@{}", envelope.eventId(), metadata.topic(), metadata.partition(), metadata.offset());
+                            return envelope.eventId();
+                        }));
+    }
+
+    private CompletableFuture<SendResult<String, String>> sendJson(EventEnvelope envelope, String topicName, String jsonString) {
+        return kafkaTemplate.send(topicName, envelope.eventId(), jsonString).toCompletableFuture();
     }
 
     private String toJson(EventEnvelope envelope) {

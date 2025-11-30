@@ -49,15 +49,26 @@ public class DynamoSchemaService implements SchemaService {
                         if (item == null || item.isEmpty()) {
                             return null;
                         }
-                        // Prefer EVENT_SCHEMA_DEFINITION, fallback to EVENT_SCHEMA_DEFINITION_AVRO
-                        String avroSchema = stringValue(item, "EVENT_SCHEMA_DEFINITION", null);
-                        if (avroSchema == null || avroSchema.isEmpty()) {
-                            avroSchema = stringValue(item, "EVENT_SCHEMA_DEFINITION_AVRO", null);
+
+                        // Read both schema definitions
+                        String jsonSchema = stringValue(item, "EVENT_SCHEMA_DEFINITION", null);
+                        String avroSchema = stringValue(item, "EVENT_SCHEMA_DEFINITION_AVRO", null);
+
+                        // Determine schema format type
+                        SchemaFormatType formatType;
+                        if (jsonSchema != null && !jsonSchema.isEmpty()) {
+                            formatType = SchemaFormatType.JSON_SCHEMA;
+                        } else if (avroSchema != null && !avroSchema.isEmpty()) {
+                            formatType = SchemaFormatType.AVRO_SCHEMA;
+                        } else {
+                            return null; // No schema available
                         }
-                        
+
                         return new SchemaDefinition(
                                 reference,
+                                jsonSchema,
                                 avroSchema,
+                                formatType,
                                 "ACTIVE".equals(stringValue(item, "EVENT_SCHEMA_STATUS", "INACTIVE")),
                                 Instant.parse(stringValue(item, "UPDATE_TS", Instant.now().toString()))
                         );
@@ -179,20 +190,24 @@ public class DynamoSchemaService implements SchemaService {
                 }
             }
             
-            // Prefer EVENT_SCHEMA_DEFINITION, fallback to EVENT_SCHEMA_DEFINITION_AVRO
-            String avroSchema = stringValue(item, "EVENT_SCHEMA_DEFINITION", null);
-            if (avroSchema == null || avroSchema.isEmpty()) {
-                avroSchema = stringValue(item, "EVENT_SCHEMA_DEFINITION_AVRO", null);
+            // Read both schema definitions
+            String jsonSchema = stringValue(item, "EVENT_SCHEMA_DEFINITION", null);
+            String avroSchema = stringValue(item, "EVENT_SCHEMA_DEFINITION_AVRO", null);
+
+            // Determine schema format type
+            SchemaFormatType formatType;
+            if (jsonSchema != null && !jsonSchema.isEmpty()) {
+                formatType = SchemaFormatType.JSON_SCHEMA;
+            } else if (avroSchema != null && !avroSchema.isEmpty()) {
+                formatType = SchemaFormatType.AVRO_SCHEMA;
+            } else {
+                return null; // No schema available
             }
-            
+
             String status = stringValue(item, "EVENT_SCHEMA_STATUS", "INACTIVE");
             String updateTsStr = stringValue(item, "UPDATE_TS", null);
             boolean isActive = "ACTIVE".equals(status);
-            
-            if (avroSchema == null || avroSchema.isEmpty()) {
-                return null;
-            }
-            
+
             // Parse UPDATE_TS with error handling
             Instant updateTs = Instant.now(); // Default to now if parsing fails
             if (updateTsStr != null && !updateTsStr.isEmpty()) {
@@ -202,10 +217,12 @@ public class DynamoSchemaService implements SchemaService {
                     log.warn("Failed to parse UPDATE_TS: {} for PK: {}, SK: {}, using current time", updateTsStr, pk, sk);
                 }
             }
-            
+
             return new SchemaDefinition(
                     reference,
+                    jsonSchema,
                     avroSchema,
+                    formatType,
                     isActive,
                     updateTs
             );

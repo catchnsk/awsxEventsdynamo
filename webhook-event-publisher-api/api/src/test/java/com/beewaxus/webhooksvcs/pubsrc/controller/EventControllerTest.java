@@ -4,6 +4,9 @@ import com.beewaxus.webhooksvcs.pubsrc.config.WebhooksProperties;
 import com.beewaxus.webhooksvcs.pubsrc.converter.AvroSerializer;
 import com.beewaxus.webhooksvcs.pubsrc.converter.FormatConverter;
 import com.beewaxus.webhooksvcs.pubsrc.validation.AvroSchemaValidator;
+import com.beewaxus.webhooksvcs.pubsrc.validation.JsonSchemaValidator;
+import com.beewaxus.webhooksvcs.pubsrc.schema.SchemaFormatType;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.beewaxus.webhooksvcs.pubsrc.model.EventEnvelope;
 import com.beewaxus.webhooksvcs.pubsrc.publisher.EventPublisher;
@@ -53,9 +56,7 @@ class EventControllerTest {
     @Test
     void acceptsValidEvent() {
         webTestClient.post()
-                .uri("/events/CustomerUpdated")
-                .header("X-Producer-Domain", "demo")
-                .header("X-Event-Version", "v1")
+                .uri("/events/demo/CustomerUpdated/v1")
                 .header("Content-Type", "application/json")
                 .bodyValue("{\"customerId\":\"123\"}")
                 .exchange()
@@ -194,6 +195,43 @@ class EventControllerTest {
                 .jsonPath("$.eventId").isNotEmpty();
     }
 
+    @Test
+    void publishEvent_WithJsonSchema_ReturnsAccepted() {
+        webTestClient.post()
+                .uri("/events/demo/UserEvent/v1")
+                .header("Content-Type", "application/json")
+                .bodyValue("{\"userId\":\"user123\",\"action\":\"LOGIN\"}")
+                .exchange()
+                .expectStatus().isAccepted()
+                .expectBody()
+                .jsonPath("$.eventId").exists();
+    }
+
+    @Test
+    void publishEvent_WithAvroSchema_ReturnsAccepted() {
+        webTestClient.post()
+                .uri("/events/demo/CustomerUpdated/v1")
+                .header("Content-Type", "application/json")
+                .bodyValue("{\"customerId\":\"123\"}")
+                .exchange()
+                .expectStatus().isAccepted()
+                .expectBody()
+                .jsonPath("$.eventId").exists();
+    }
+
+    @Test
+    void publishEventBySchemaId_WithJsonSchema_ReturnsAccepted() {
+        webTestClient.post()
+                .uri("/events/schema_id/JSON_SCHEMA_001")
+                .header("Content-Type", "application/json")
+                .header("X-Event-Id", "evt-json-test")
+                .bodyValue("{\"userId\":\"user123\",\"action\":\"LOGIN\"}")
+                .exchange()
+                .expectStatus().isAccepted()
+                .expectBody()
+                .jsonPath("$.eventId").isEqualTo("evt-json-test");
+    }
+
     @TestConfiguration
     static class TestConfig {
 
@@ -201,21 +239,47 @@ class EventControllerTest {
         @Primary
         SchemaService schemaService() {
             String avroSchema = "{\"type\":\"record\",\"name\":\"CustomerUpdated\",\"fields\":[{\"name\":\"customerId\",\"type\":\"string\"}]}";
-            SchemaDefinition definition = new SchemaDefinition(
+            SchemaDefinition avroDefinition = new SchemaDefinition(
                     new SchemaReference("demo", "CustomerUpdated", "v1"),
-                    avroSchema,
+                    null,  // jsonSchema
+                    avroSchema,  // avroSchema
+                    SchemaFormatType.AVRO_SCHEMA,  // formatType
                     true,
                     Instant.now()
             );
+
+            String jsonSchema = """
+                {
+                  "$schema": "http://json-schema.org/draft-07/schema#",
+                  "type": "object",
+                  "properties": {
+                    "userId": { "type": "string" },
+                    "action": { "type": "string" }
+                  },
+                  "required": ["userId", "action"]
+                }
+                """;
+            SchemaDefinition jsonDefinition = new SchemaDefinition(
+                    new SchemaReference("demo", "UserEvent", "v1"),
+                    jsonSchema,  // jsonSchema
+                    null,  // avroSchema
+                    SchemaFormatType.JSON_SCHEMA,  // formatType
+                    true,
+                    Instant.now()
+            );
+
             return new SchemaService() {
                 @Override
                 public Mono<SchemaDefinition> fetchSchema(SchemaReference reference) {
-                    return Mono.just(definition);
+                    if ("UserEvent".equals(reference.eventName())) {
+                        return Mono.just(jsonDefinition);
+                    }
+                    return Mono.just(avroDefinition);
                 }
 
                 @Override
                 public Flux<SchemaDefinition> fetchAllSchemas() {
-                    return Flux.just(definition);
+                    return Flux.just(avroDefinition, jsonDefinition);
                 }
 
                 @Override
@@ -338,9 +402,43 @@ class EventControllerTest {
                         ));
                     }
                     
+                    if ("JSON_SCHEMA_001".equals(schemaId)) {
+                        // Test JSON Schema flow
+                        String jsonSchemaStr = """
+                            {
+                              "$schema": "http://json-schema.org/draft-07/schema#",
+                              "type": "object",
+                              "properties": {
+                                "userId": { "type": "string" },
+                                "action": { "type": "string" }
+                              },
+                              "required": ["userId", "action"]
+                            }
+                            """;
+                        return Mono.just(new SchemaDetailResponse(
+                                "JSON_SCHEMA_001",
+                                "demo",
+                                "UserEvent",
+                                "1.0",
+                                "Test header",
+                                null, // eventSchemaDefinitionAvro (not used)
+                                jsonSchemaStr, // eventSchemaDefinition (JSON Schema)
+                                null,
+                                "ACTIVE",
+                                "NO",
+                                "user1",
+                                "test.topic.user",
+                                "ACTIVE",
+                                Instant.now(),
+                                "user1",
+                                Instant.now(),
+                                "user1"
+                        ));
+                    }
+
                     // Default: Return valid schema for SCHEMA_0001
                     String avroSchema = "{\"type\":\"record\",\"name\":\"TestEvent\",\"fields\":[{\"name\":\"customerId\",\"type\":\"string\"},{\"name\":\"status\",\"type\":\"string\"}]}";
-                    
+
                     return Mono.just(new SchemaDetailResponse(
                             "SCHEMA_0001",
                             "demo",
@@ -382,6 +480,11 @@ class EventControllerTest {
                 public Mono<String> publishAvro(EventEnvelope envelope, String topicName, byte[] avroBytes) {
                     return Mono.just(envelope.eventId());
                 }
+
+                @Override
+                public Mono<String> publishJson(EventEnvelope envelope, String topicName, JsonNode jsonPayload) {
+                    return Mono.just(envelope.eventId());
+                }
             };
         }
 
@@ -395,6 +498,12 @@ class EventControllerTest {
         @Primary
         AvroSchemaValidator avroSchemaValidator() {
             return new AvroSchemaValidator();
+        }
+
+        @Bean
+        @Primary
+        JsonSchemaValidator jsonSchemaValidator() {
+            return new JsonSchemaValidator();
         }
 
         @Bean

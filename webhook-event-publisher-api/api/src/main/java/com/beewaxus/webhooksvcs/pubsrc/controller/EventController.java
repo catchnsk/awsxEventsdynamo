@@ -15,6 +15,8 @@ import com.beewaxus.webhooksvcs.pubsrc.schema.SchemaFormat;
 import com.beewaxus.webhooksvcs.pubsrc.schema.SchemaReference;
 import com.beewaxus.webhooksvcs.pubsrc.schema.SchemaService;
 import com.beewaxus.webhooksvcs.pubsrc.validation.AvroSchemaValidator;
+import com.beewaxus.webhooksvcs.pubsrc.validation.JsonSchemaValidator;
+import com.beewaxus.webhooksvcs.pubsrc.schema.SchemaFormatType;
 import jakarta.validation.constraints.NotBlank;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericDatumReader;
@@ -44,6 +46,7 @@ public class EventController {
 
     private final SchemaService schemaService;
     private final AvroSchemaValidator avroSchemaValidator;
+    private final JsonSchemaValidator jsonSchemaValidator;
     private final FormatConverter formatConverter;
     private final EventPublisher eventPublisher;
     private final ObjectMapper objectMapper;
@@ -52,6 +55,7 @@ public class EventController {
 
     public EventController(SchemaService schemaService,
                            AvroSchemaValidator avroSchemaValidator,
+                           JsonSchemaValidator jsonSchemaValidator,
                            FormatConverter formatConverter,
                            EventPublisher eventPublisher,
                            ObjectMapper objectMapper,
@@ -59,6 +63,7 @@ public class EventController {
                            WebhooksProperties properties) {
         this.schemaService = schemaService;
         this.avroSchemaValidator = avroSchemaValidator;
+        this.jsonSchemaValidator = jsonSchemaValidator;
         this.formatConverter = formatConverter;
         this.eventPublisher = eventPublisher;
         this.objectMapper = objectMapper;
@@ -66,12 +71,12 @@ public class EventController {
         this.properties = properties;
     }
 
-    @PostMapping(value = "/events/{eventName}",
+    @PostMapping(value = "/events/{domain}/{eventName}/{version}",
                  consumes = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE, "application/avro"})
     public Mono<ResponseEntity<EventAcceptedResponse>> publishEvent(
+            @PathVariable @NotBlank String domain,
             @PathVariable @NotBlank String eventName,
-            @RequestHeader("X-Producer-Domain") String domain,
-            @RequestHeader("X-Event-Version") String version,
+            @PathVariable @NotBlank String version,
             @RequestHeader(value = "Content-Type", defaultValue = MediaType.APPLICATION_JSON_VALUE) String contentType,
             @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
             @RequestBody String rawPayload,
@@ -95,52 +100,29 @@ public class EventController {
                             return new ResponseStatusException(SERVICE_UNAVAILABLE, "DynamoDB service unavailable: " + e.getMessage(), e);
                         })
                         .flatMap(schemaDefinition -> {
-                            // Get Avro schema (prefer EVENT_SCHEMA_DEFINITION, fallback to EVENT_SCHEMA_DEFINITION_AVRO)
-                            // For this endpoint, we need to fetch the full schema detail to get EVENT_SCHEMA_DEFINITION
-                            String avroSchemaString = schemaDefinition.avroSchema();
-                            
-                            // Validate Avro schema exists
-                            if (avroSchemaString == null || avroSchemaString.isEmpty()) {
-                                return Mono.error(new ResponseStatusException(BAD_REQUEST, "Schema definition not configured for this event"));
-                            }
-                            
-                            // Step 1: Convert payload to JSON (if XML/JSON/Avro)
+                            // Construct topic name: {prefix}.{domain}.{eventName}
+                            String topicName = "%s.%s.%s".formatted(
+                                    properties.kafka().ingressTopicPrefix(),
+                                    reference.domain(),
+                                    reference.eventName()
+                            );
+
+                            // Step 1: Convert payload to JSON
                             return convertToJson(payload, format)
                                     .flatMap(jsonNode -> {
-                                        // Step 2: Parse Avro schema for type coercion
-                                        Schema avroSchema = new Schema.Parser().parse(avroSchemaString);
-                                        
-                                        // Step 3: Coerce JSON types to match Avro schema (important for XML where all values are strings)
-                                        JsonNode coercedJson = coerceJsonToAvroTypes(jsonNode, avroSchema);
-                                        
-                                        // Step 4: Convert to Avro and validate against Avro schema
-                                        // This will throw SchemaValidationException if validation fails
-                                        return avroSchemaValidator.validate(coercedJson, schemaDefinition);
-                                    })
-                                    .flatMap(avroRecord -> {
-                                        // Step 5: Serialize validated Avro record to binary
-                                        Schema avroSchema = new Schema.Parser().parse(avroSchemaString);
-                                        return avroSerializer.serializeToAvro(avroRecord, avroSchema);
-                                    })
-                                    .flatMap(avroBytes -> {
-                                        // Step 4: Publish to Kafka (construct topic name from schema reference)
-                                        EventEnvelope envelope = new EventEnvelope(
-                                                eventId,
-                                                reference,
-                                                objectMapper.valueToTree(Map.of("originalFormat", format.name())),
-                                                Instant.now(),
-                                                Map.of("Idempotency-Key", idempotencyKeyValue, "Original-Format", format.name())
-                                        );
-                                        // Construct topic name: {prefix}.{domain}.{eventName}
-                                        String topicName = "%s.%s.%s".formatted(
-                                                properties.kafka().ingressTopicPrefix(),
-                                                reference.domain(),
-                                                reference.eventName()
-                                        );
-                                        return eventPublisher.publishAvro(envelope, topicName, avroBytes);
+                                        // Branch based on schema format type
+                                        if (schemaDefinition.formatType() == SchemaFormatType.JSON_SCHEMA) {
+                                            // JSON Schema validation flow
+                                            return handleJsonSchemaValidation(jsonNode, schemaDefinition, reference,
+                                                    eventId, idempotencyKeyValue, format, topicName);
+                                        } else {
+                                            // Avro Schema validation flow (existing behavior)
+                                            return handleAvroSchemaValidation(jsonNode, schemaDefinition, reference,
+                                                    eventId, idempotencyKeyValue, format, topicName);
+                                        }
                                     });
                         })
-                        .onErrorMap(KafkaPublishException.class, e -> 
+                        .onErrorMap(KafkaPublishException.class, e ->
                             new ResponseStatusException(SERVICE_UNAVAILABLE, "Kafka is unavailable: " + e.getMessage(), e)))
                 .map(id -> ResponseEntity.accepted().body(new EventAcceptedResponse(id)));
     }
@@ -205,40 +187,19 @@ public class EventController {
                                     schemaDetail.version()
                             );
                             
-                            // Step 1: Convert payload to JSON (if XML/JSON/Avro)
+                            // Step 1: Convert payload to JSON
                             return convertToJson(payload, format)
                                     .flatMap(jsonNode -> {
-                                        // Step 2: Parse Avro schema for type coercion
-                                        Schema avroSchema = new Schema.Parser().parse(avroSchemaString);
-                                        
-                                        // Step 3: Coerce JSON types to match Avro schema (important for XML where all values are strings)
-                                        JsonNode coercedJson = coerceJsonToAvroTypes(jsonNode, avroSchema);
-                                        
-                                        // Step 4: Convert to Avro and validate against Avro schema
-                                        // This will throw SchemaValidationException if validation fails
-                                        return avroSchemaValidator.validate(coercedJson, schemaDefinition);
-                                    })
-                                    .flatMap(avroRecord -> {
-                                        // Step 5: Serialize validated Avro record to binary
-                                        Schema avroSchema = new Schema.Parser().parse(avroSchemaString);
-                                        return avroSerializer.serializeToAvro(avroRecord, avroSchema);
-                                    })
-                                    .flatMap(avroBytes -> {
-                                        // Create EventEnvelope
-                                        EventEnvelope envelope = new EventEnvelope(
-                                                eventId,
-                                                reference,
-                                                objectMapper.valueToTree(Map.of("schemaId", schemaId)),
-                                                Instant.now(),
-                                                Map.of(
-                                                        "Idempotency-Key", idempotencyKeyValue,
-                                                        "Original-Format", format.name(),
-                                                        "Schema-Id", schemaId
-                                                )
-                                        );
-                                        
-                                        // Publish to Kafka using topic from schema
-                                        return eventPublisher.publishAvro(envelope, schemaDetail.topicName(), avroBytes);
+                                        // Branch based on schema format type
+                                        if (schemaDefinition.formatType() == SchemaFormatType.JSON_SCHEMA) {
+                                            // JSON Schema validation flow
+                                            return handleJsonSchemaValidationBySchemaId(jsonNode, schemaDefinition, reference,
+                                                    eventId, idempotencyKeyValue, format, schemaDetail.topicName(), schemaId);
+                                        } else {
+                                            // Avro Schema validation flow
+                                            return handleAvroSchemaValidationBySchemaId(jsonNode, schemaDefinition, reference,
+                                                    eventId, idempotencyKeyValue, format, schemaDetail.topicName(), schemaId, avroSchemaString);
+                                        }
                                     })
                                     .onErrorMap(KafkaPublishException.class, e -> 
                                         new ResponseStatusException(SERVICE_UNAVAILABLE, "Kafka is unavailable: " + e.getMessage(), e))
@@ -289,6 +250,125 @@ public class EventController {
     }
 
     /**
+     * Handle JSON Schema validation flow
+     */
+    private Mono<String> handleJsonSchemaValidation(JsonNode jsonNode, SchemaDefinition schemaDefinition,
+                                                     SchemaReference reference, String eventId,
+                                                     String idempotencyKey, SchemaFormat format, String topicName) {
+        return jsonSchemaValidator.validate(jsonNode, schemaDefinition)
+                .flatMap(validatedJson -> {
+                    EventEnvelope envelope = new EventEnvelope(
+                            eventId,
+                            reference,
+                            objectMapper.valueToTree(Map.of("originalFormat", format.name())),
+                            Instant.now(),
+                            Map.of("Idempotency-Key", idempotencyKey, "Original-Format", format.name()),
+                            SchemaFormatType.JSON_SCHEMA
+                    );
+                    return eventPublisher.publishJson(envelope, topicName, validatedJson);
+                });
+    }
+
+    /**
+     * Handle JSON Schema validation flow for schema ID endpoint
+     */
+    private Mono<String> handleJsonSchemaValidationBySchemaId(JsonNode jsonNode, SchemaDefinition schemaDefinition,
+                                                               SchemaReference reference, String eventId,
+                                                               String idempotencyKey, SchemaFormat format,
+                                                               String topicName, String schemaId) {
+        return jsonSchemaValidator.validate(jsonNode, schemaDefinition)
+                .flatMap(validatedJson -> {
+                    EventEnvelope envelope = new EventEnvelope(
+                            eventId,
+                            reference,
+                            objectMapper.valueToTree(Map.of("schemaId", schemaId)),
+                            Instant.now(),
+                            Map.of(
+                                    "Idempotency-Key", idempotencyKey,
+                                    "Original-Format", format.name(),
+                                    "Schema-Id", schemaId
+                            ),
+                            SchemaFormatType.JSON_SCHEMA
+                    );
+                    return eventPublisher.publishJson(envelope, topicName, validatedJson);
+                });
+    }
+
+    /**
+     * Handle Avro Schema validation flow for schema ID endpoint
+     */
+    private Mono<String> handleAvroSchemaValidationBySchemaId(JsonNode jsonNode, SchemaDefinition schemaDefinition,
+                                                               SchemaReference reference, String eventId,
+                                                               String idempotencyKey, SchemaFormat format,
+                                                               String topicName, String schemaId, String avroSchemaString) {
+        // Parse Avro schema for type coercion
+        Schema avroSchema = new Schema.Parser().parse(avroSchemaString);
+
+        // Coerce JSON types to match Avro schema
+        JsonNode coercedJson = coerceJsonToAvroTypes(jsonNode, avroSchema);
+
+        // Convert to Avro and validate against Avro schema
+        return avroSchemaValidator.validate(coercedJson, schemaDefinition)
+                .flatMap(avroRecord -> {
+                    // Serialize validated Avro record to binary
+                    return avroSerializer.serializeToAvro(avroRecord, avroSchema);
+                })
+                .flatMap(avroBytes -> {
+                    EventEnvelope envelope = new EventEnvelope(
+                            eventId,
+                            reference,
+                            objectMapper.valueToTree(Map.of("schemaId", schemaId)),
+                            Instant.now(),
+                            Map.of(
+                                    "Idempotency-Key", idempotencyKey,
+                                    "Original-Format", format.name(),
+                                    "Schema-Id", schemaId
+                            ),
+                            SchemaFormatType.AVRO_SCHEMA
+                    );
+                    return eventPublisher.publishAvro(envelope, topicName, avroBytes);
+                });
+    }
+
+    /**
+     * Handle Avro Schema validation flow (existing behavior)
+     */
+    private Mono<String> handleAvroSchemaValidation(JsonNode jsonNode, SchemaDefinition schemaDefinition,
+                                                     SchemaReference reference, String eventId,
+                                                     String idempotencyKey, SchemaFormat format, String topicName) {
+        String avroSchemaString = schemaDefinition.avroSchema();
+
+        // Validate Avro schema exists
+        if (avroSchemaString == null || avroSchemaString.isEmpty()) {
+            return Mono.error(new ResponseStatusException(BAD_REQUEST, "Avro schema definition not configured for this event"));
+        }
+
+        // Parse Avro schema for type coercion
+        Schema avroSchema = new Schema.Parser().parse(avroSchemaString);
+
+        // Coerce JSON types to match Avro schema (important for XML where all values are strings)
+        JsonNode coercedJson = coerceJsonToAvroTypes(jsonNode, avroSchema);
+
+        // Convert to Avro and validate against Avro schema
+        return avroSchemaValidator.validate(coercedJson, schemaDefinition)
+                .flatMap(avroRecord -> {
+                    // Serialize validated Avro record to binary
+                    return avroSerializer.serializeToAvro(avroRecord, avroSchema);
+                })
+                .flatMap(avroBytes -> {
+                    EventEnvelope envelope = new EventEnvelope(
+                            eventId,
+                            reference,
+                            objectMapper.valueToTree(Map.of("originalFormat", format.name())),
+                            Instant.now(),
+                            Map.of("Idempotency-Key", idempotencyKey, "Original-Format", format.name()),
+                            SchemaFormatType.AVRO_SCHEMA
+                    );
+                    return eventPublisher.publishAvro(envelope, topicName, avroBytes);
+                });
+    }
+
+    /**
      * Convert payload to JSON format based on Content-Type.
      * For JSON/XML/Avro, all are converted to JsonNode for further processing.
      * Validation against Avro schema happens later in the flow.
@@ -309,15 +389,25 @@ public class EventController {
                 detail.eventName(),
                 detail.version()
         );
-        
-        // Prefer EVENT_SCHEMA_DEFINITION, fallback to EVENT_SCHEMA_DEFINITION_AVRO
-        String avroSchema = detail.eventSchemaDefinition() != null && !detail.eventSchemaDefinition().isEmpty()
-                ? detail.eventSchemaDefinition()
-                : detail.eventSchemaDefinitionAvro();
-        
+
+        String jsonSchema = detail.eventSchemaDefinition();
+        String avroSchema = detail.eventSchemaDefinitionAvro();
+
+        // Determine schema format type
+        SchemaFormatType formatType;
+        if (jsonSchema != null && !jsonSchema.isEmpty()) {
+            formatType = SchemaFormatType.JSON_SCHEMA;
+        } else if (avroSchema != null && !avroSchema.isEmpty()) {
+            formatType = SchemaFormatType.AVRO_SCHEMA;
+        } else {
+            formatType = SchemaFormatType.AVRO_SCHEMA; // Default fallback
+        }
+
         return new SchemaDefinition(
                 reference,
+                jsonSchema,
                 avroSchema,
+                formatType,
                 "ACTIVE".equals(detail.eventSchemaStatus()),
                 detail.updateTs()
         );

@@ -104,12 +104,22 @@ public class CachingSchemaService implements SchemaService {
                                 schemaDetail.version()
                         );
 
+                        String jsonSchema = schemaDetail.eventSchemaDefinition();
+                        String avroSchema = schemaDetail.eventSchemaDefinitionAvro();
+
+                        // Determine schema format type
+                        SchemaFormatType formatType;
+                        if (jsonSchema != null && !jsonSchema.isEmpty()) {
+                            formatType = SchemaFormatType.JSON_SCHEMA;
+                        } else {
+                            formatType = SchemaFormatType.AVRO_SCHEMA;
+                        }
+
                         SchemaDefinition definition = new SchemaDefinition(
                                 reference,
-                                Objects.requireNonNullElse(
-                                        schemaDetail.eventSchemaDefinition(),
-                                        schemaDetail.eventSchemaDefinitionAvro()
-                                ),
+                                jsonSchema,
+                                avroSchema,
+                                formatType,
                                 "ACTIVE".equals(schemaDetail.eventSchemaStatus()),
                                 schemaDetail.updateTs()
                         );
