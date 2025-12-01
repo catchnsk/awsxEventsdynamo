@@ -82,7 +82,7 @@ public class EventController implements DefaultApi {
             String domain,
             String eventName,
             String version,
-            Mono<Map<String, Object>> requestBody,
+            Mono<Object> requestBody,
             String contentType,
             UUID xEventId,
             String idempotencyKey,
@@ -96,8 +96,20 @@ public class EventController implements DefaultApi {
 
         return requestBody
                 .switchIfEmpty(Mono.error(new ResponseStatusException(BAD_REQUEST, "Body required")))
-                .flatMap(bodyMap -> Mono.fromCallable(() -> objectMapper.writeValueAsString(bodyMap))
-                        .onErrorMap(e -> new ResponseStatusException(BAD_REQUEST, "Invalid JSON payload: " + e.getMessage())))
+                .flatMap(body -> {
+                    // Convert Object to Map<String, Object> if needed
+                    Map<String, Object> bodyMap;
+                    if (body instanceof Map) {
+                        @SuppressWarnings("unchecked")
+                        Map<String, Object> map = (Map<String, Object>) body;
+                        bodyMap = map;
+                    } else {
+                        // Convert to Map using ObjectMapper
+                        bodyMap = objectMapper.convertValue(body, Map.class);
+                    }
+                    return Mono.fromCallable(() -> objectMapper.writeValueAsString(bodyMap))
+                            .onErrorMap(e -> new ResponseStatusException(BAD_REQUEST, "Invalid JSON payload: " + e.getMessage()));
+                })
                 .flatMap(payload -> schemaService.fetchSchema(reference)
                         .switchIfEmpty(Mono.error(new ResponseStatusException(NOT_FOUND, "Schema not found")))
                         .onErrorMap(DynamoDbException.class, e -> {
@@ -133,13 +145,17 @@ public class EventController implements DefaultApi {
                         })
                         .onErrorMap(KafkaPublishException.class, e ->
                             new ResponseStatusException(SERVICE_UNAVAILABLE, "Kafka is unavailable: " + e.getMessage(), e)))
-                .map(id -> ResponseEntity.accepted().body(new AckResponse(UUID.fromString(id))));
+                .map(id -> {
+                    AckResponse response = new AckResponse();
+                    response.setEventId(UUID.fromString(id));
+                    return ResponseEntity.accepted().body(response);
+                });
     }
 
     @Override
     public Mono<ResponseEntity<AckResponse>> publishEventBySchemaId(
             String schemaId,
-            Mono<Map<String, Object>> requestBody,
+            Mono<Object> requestBody,
             String contentType,
             UUID xEventId,
             String idempotencyKey,
@@ -152,8 +168,20 @@ public class EventController implements DefaultApi {
 
         return requestBody
                 .switchIfEmpty(Mono.error(new ResponseStatusException(BAD_REQUEST, "Body required")))
-                .flatMap(bodyMap -> Mono.fromCallable(() -> objectMapper.writeValueAsString(bodyMap))
-                        .onErrorMap(e -> new ResponseStatusException(BAD_REQUEST, "Invalid JSON payload: " + e.getMessage())))
+                .flatMap(body -> {
+                    // Convert Object to Map<String, Object> if needed
+                    Map<String, Object> bodyMap;
+                    if (body instanceof Map) {
+                        @SuppressWarnings("unchecked")
+                        Map<String, Object> map = (Map<String, Object>) body;
+                        bodyMap = map;
+                    } else {
+                        // Convert to Map using ObjectMapper
+                        bodyMap = objectMapper.convertValue(body, Map.class);
+                    }
+                    return Mono.fromCallable(() -> objectMapper.writeValueAsString(bodyMap))
+                            .onErrorMap(e -> new ResponseStatusException(BAD_REQUEST, "Invalid JSON payload: " + e.getMessage()));
+                })
                 .flatMap(payload -> schemaService.fetchSchemaBySchemaId(schemaId)
                         .switchIfEmpty(Mono.error(new ResponseStatusException(NOT_FOUND, "Schema not found for schemaId: " + schemaId)))
                         .onErrorMap(DynamoDbException.class, e -> {
@@ -232,7 +260,11 @@ public class EventController implements DefaultApi {
                                         return throwable;
                                     });
                         }))
-                .map(id -> ResponseEntity.accepted().body(new AckResponse(UUID.fromString(id))))
+                .map(id -> {
+                    AckResponse response = new AckResponse();
+                    response.setEventId(UUID.fromString(id));
+                    return ResponseEntity.accepted().body(response);
+                })
                 .onErrorMap(throwable -> {
                     // Catch any unhandled exceptions and ensure they're properly mapped
                     if (throwable instanceof ResponseStatusException) {
