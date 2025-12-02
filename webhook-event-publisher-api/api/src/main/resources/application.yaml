@@ -31,6 +31,8 @@ aws:
   region: us-east-1
   dynamodb:
     endpoint: http://localhost:8000
+    access-key: dummy
+    secret-key: dummy
 
 logging:
   level:

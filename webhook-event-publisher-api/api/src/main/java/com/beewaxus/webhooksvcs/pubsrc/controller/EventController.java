@@ -79,38 +79,32 @@ public class EventController implements DefaultApi {
 
     @Override
     public Mono<ResponseEntity<AckResponse>> publishEvent(
-            String domain,
-            String eventName,
-            String version,
-            Mono<Object> requestBody,
+            Mono<com.beewaxus.webhooksvcs.api.model.InlineObject> inlineObject,
             String contentType,
             UUID xEventId,
             String idempotencyKey,
             ServerWebExchange exchange) {
 
-        SchemaReference reference = new SchemaReference(domain, eventName, version);
         String eventId = xEventId != null ? xEventId.toString() : UUID.randomUUID().toString();
         String idempotencyKeyValue = idempotencyKey != null ? idempotencyKey : eventId;
         contentType = contentType != null ? contentType : MediaType.APPLICATION_JSON_VALUE;
         SchemaFormat format = SchemaFormat.fromContentType(contentType);
 
-        return requestBody
+        return inlineObject
                 .switchIfEmpty(Mono.error(new ResponseStatusException(BAD_REQUEST, "Body required")))
                 .flatMap(body -> {
-                    // Convert Object to Map<String, Object> if needed
-                    Map<String, Object> bodyMap;
-                    if (body instanceof Map) {
-                        @SuppressWarnings("unchecked")
-                        Map<String, Object> map = (Map<String, Object>) body;
-                        bodyMap = map;
-                    } else {
-                        // Convert to Map using ObjectMapper
-                        bodyMap = objectMapper.convertValue(body, Map.class);
-                    }
-                    return Mono.fromCallable(() -> objectMapper.writeValueAsString(bodyMap))
-                            .onErrorMap(e -> new ResponseStatusException(BAD_REQUEST, "Invalid JSON payload: " + e.getMessage()));
-                })
-                .flatMap(payload -> schemaService.fetchSchema(reference)
+                    // Extract domain, eventName, version, and data from the body
+                    String domain = body.getDomain();
+                    String eventName = body.getEventName();
+                    String version = body.getVersion();
+                    Map<String, Object> data = body.getData();
+
+                    SchemaReference reference = new SchemaReference(domain, eventName, version);
+
+                    // Convert data to JSON string
+                    return Mono.fromCallable(() -> objectMapper.writeValueAsString(data))
+                            .onErrorMap(e -> new ResponseStatusException(BAD_REQUEST, "Invalid JSON payload: " + e.getMessage()))
+                            .flatMap(payload -> schemaService.fetchSchema(reference)
                         .switchIfEmpty(Mono.error(new ResponseStatusException(NOT_FOUND, "Schema not found")))
                         .onErrorMap(DynamoDbException.class, e -> {
                             // Check if it's a table not found error
@@ -144,7 +138,8 @@ public class EventController implements DefaultApi {
                                     });
                         })
                         .onErrorMap(KafkaPublishException.class, e ->
-                            new ResponseStatusException(SERVICE_UNAVAILABLE, "Kafka is unavailable: " + e.getMessage(), e)))
+                            new ResponseStatusException(SERVICE_UNAVAILABLE, "Kafka is unavailable: " + e.getMessage(), e)));
+                })
                 .map(id -> {
                     AckResponse response = new AckResponse();
                     response.setEventId(UUID.fromString(id));
@@ -564,23 +559,146 @@ public class EventController implements DefaultApi {
         };
     }
 
-    // Additional methods from DefaultApi interface
-
     @Override
     public Mono<ResponseEntity<SchemaMetadata>> fetchSchema(String domain, String event, String version, ServerWebExchange exchange) {
-        // TODO: Implement fetchSchema method
-        return Mono.error(new ResponseStatusException(HttpStatus.NOT_IMPLEMENTED, "fetchSchema not yet implemented"));
+        return schemaService.fetchSchema(new SchemaReference(domain, event, version))
+                .map(this::convertToSchemaMetadata)
+                .map(ResponseEntity::ok)
+                .switchIfEmpty(Mono.error(new ResponseStatusException(NOT_FOUND, "Schema not found")))
+                .onErrorMap(DynamoDbException.class, e -> {
+                    if (e.getMessage().contains("does not exist")) {
+                        return new ResponseStatusException(INTERNAL_SERVER_ERROR, "DynamoDB table not found: " + e.getMessage(), e);
+                    }
+                    return new ResponseStatusException(SERVICE_UNAVAILABLE, "DynamoDB service unavailable: " + e.getMessage(), e);
+                });
     }
 
     @Override
     public Mono<ResponseEntity<Flux<SchemaMetadata>>> getAllSchemas(ServerWebExchange exchange) {
-        // TODO: Implement getAllSchemas method
-        return Mono.error(new ResponseStatusException(HttpStatus.NOT_IMPLEMENTED, "getAllSchemas not yet implemented"));
+        return Mono.just(ResponseEntity.ok(
+                schemaService.fetchAllSchemas()
+                        .map(this::convertToSchemaMetadata)
+                        .onErrorMap(DynamoDbException.class, e -> {
+                            if (e.getMessage().contains("does not exist")) {
+                                return new ResponseStatusException(INTERNAL_SERVER_ERROR, "DynamoDB table not found: " + e.getMessage(), e);
+                            }
+                            return new ResponseStatusException(SERVICE_UNAVAILABLE, "DynamoDB service unavailable: " + e.getMessage(), e);
+                        })
+        ));
     }
 
     @Override
     public Mono<ResponseEntity<com.beewaxus.webhooksvcs.api.model.SchemaDetailResponse>> getSchemaBySchemaId(String schemaId, ServerWebExchange exchange) {
-        // TODO: Implement getSchemaBySchemaId method
-        return Mono.error(new ResponseStatusException(HttpStatus.NOT_IMPLEMENTED, "getSchemaBySchemaId not yet implemented"));
+        return schemaService.fetchSchemaBySchemaId(schemaId)
+                .map(this::convertToApiSchemaDetailResponse)
+                .map(ResponseEntity::ok)
+                .switchIfEmpty(Mono.error(new ResponseStatusException(NOT_FOUND, "Schema not found for schemaId: " + schemaId)))
+                .onErrorMap(DynamoDbException.class, e -> {
+                    if (e.getMessage().contains("does not exist")) {
+                        return new ResponseStatusException(INTERNAL_SERVER_ERROR, "DynamoDB table not found: " + e.getMessage(), e);
+                    }
+                    return new ResponseStatusException(SERVICE_UNAVAILABLE, "DynamoDB service unavailable: " + e.getMessage(), e);
+                });
+    }
+
+    private SchemaMetadata convertToSchemaMetadata(SchemaDefinition schemaDefinition) {
+        SchemaMetadata metadata = new SchemaMetadata();
+        String schemaId = String.format("SCHEMA_%s_%s_%s",
+                schemaDefinition.reference().domain().toUpperCase(),
+                schemaDefinition.reference().eventName().toUpperCase(),
+                schemaDefinition.reference().version().toUpperCase());
+        metadata.setSchemaId(schemaId);
+
+        SchemaMetadata.FormatTypeEnum formatType = schemaDefinition.formatType() == SchemaFormatType.JSON_SCHEMA
+                ? SchemaMetadata.FormatTypeEnum.JSON_SCHEMA
+                : SchemaMetadata.FormatTypeEnum.AVRO_SCHEMA;
+        metadata.setFormatType(formatType);
+
+        metadata.setStatus(schemaDefinition.active()
+                ? SchemaMetadata.StatusEnum.ACTIVE
+                : SchemaMetadata.StatusEnum.INACTIVE);
+
+        metadata.setEventName(schemaDefinition.reference().eventName());
+        metadata.setProducerDomain(schemaDefinition.reference().domain());
+        metadata.setVersion(schemaDefinition.reference().version());
+
+        if (schemaDefinition.jsonSchema() != null && !schemaDefinition.jsonSchema().isEmpty()) {
+            metadata.setJsonSchema(org.openapitools.jackson.nullable.JsonNullable.of(schemaDefinition.jsonSchema()));
+        }
+        if (schemaDefinition.avroSchema() != null && !schemaDefinition.avroSchema().isEmpty()) {
+            metadata.setAvroSchema(org.openapitools.jackson.nullable.JsonNullable.of(schemaDefinition.avroSchema()));
+        }
+
+        if (schemaDefinition.updatedAt() != null) {
+            metadata.setUpdatedAt(schemaDefinition.updatedAt().atOffset(java.time.ZoneOffset.UTC));
+        }
+
+        return metadata;
+    }
+
+    private com.beewaxus.webhooksvcs.api.model.SchemaDetailResponse convertToApiSchemaDetailResponse(
+            com.beewaxus.webhooksvcs.pubsrc.schema.SchemaDetailResponse internal) {
+        com.beewaxus.webhooksvcs.api.model.SchemaDetailResponse api =
+                new com.beewaxus.webhooksvcs.api.model.SchemaDetailResponse();
+
+        api.setEventSchemaId(internal.eventSchemaId());
+        api.setProducerDomain(internal.producerDomain());
+        api.setEventName(internal.eventName());
+        api.setVersion(internal.version());
+        api.setEventSchemaHeader(internal.eventSchemaHeader());
+
+        if (internal.eventSchemaDefinition() != null && !internal.eventSchemaDefinition().isEmpty()) {
+            api.setEventSchemaDefinition(org.openapitools.jackson.nullable.JsonNullable.of(internal.eventSchemaDefinition()));
+        }
+        if (internal.eventSchemaDefinitionAvro() != null && !internal.eventSchemaDefinitionAvro().isEmpty()) {
+            api.setEventSchemaDefinitionAvro(org.openapitools.jackson.nullable.JsonNullable.of(internal.eventSchemaDefinitionAvro()));
+        }
+
+        boolean hasJsonSchema = internal.eventSchemaDefinition() != null && !internal.eventSchemaDefinition().isEmpty();
+        com.beewaxus.webhooksvcs.api.model.SchemaDetailResponse.FormatTypeEnum formatType = hasJsonSchema
+                ? com.beewaxus.webhooksvcs.api.model.SchemaDetailResponse.FormatTypeEnum.JSON_SCHEMA
+                : com.beewaxus.webhooksvcs.api.model.SchemaDetailResponse.FormatTypeEnum.AVRO_SCHEMA;
+        api.setFormatType(formatType);
+
+        api.setEventSample(internal.eventSample());
+
+        if (internal.eventSchemaStatus() != null) {
+            api.setEventSchemaStatus(
+                    "ACTIVE".equals(internal.eventSchemaStatus())
+                            ? com.beewaxus.webhooksvcs.api.model.SchemaDetailResponse.EventSchemaStatusEnum.ACTIVE
+                            : com.beewaxus.webhooksvcs.api.model.SchemaDetailResponse.EventSchemaStatusEnum.INACTIVE
+            );
+        }
+
+        if (internal.hasSensitiveData() != null) {
+            api.setHasSensitiveData(
+                    "true".equalsIgnoreCase(internal.hasSensitiveData())
+                            ? com.beewaxus.webhooksvcs.api.model.SchemaDetailResponse.HasSensitiveDataEnum.TRUE
+                            : com.beewaxus.webhooksvcs.api.model.SchemaDetailResponse.HasSensitiveDataEnum.FALSE
+            );
+        }
+
+        api.setProducerSystemUsersId(internal.producerSystemUsersId());
+        api.setTopicName(internal.topicName());
+
+        if (internal.topicStatus() != null) {
+            api.setTopicStatus(
+                    "ACTIVE".equals(internal.topicStatus())
+                            ? com.beewaxus.webhooksvcs.api.model.SchemaDetailResponse.TopicStatusEnum.ACTIVE
+                            : com.beewaxus.webhooksvcs.api.model.SchemaDetailResponse.TopicStatusEnum.INACTIVE
+            );
+        }
+
+        if (internal.insertTs() != null) {
+            api.setInsertTs(org.openapitools.jackson.nullable.JsonNullable.of(internal.insertTs().atOffset(java.time.ZoneOffset.UTC)));
+        }
+        api.setInsertUser(internal.insertUser());
+
+        if (internal.updateTs() != null) {
+            api.setUpdateTs(org.openapitools.jackson.nullable.JsonNullable.of(internal.updateTs().atOffset(java.time.ZoneOffset.UTC)));
+        }
+        api.setUpdateUser(internal.updateUser());
+
+        return api;
     }
 }

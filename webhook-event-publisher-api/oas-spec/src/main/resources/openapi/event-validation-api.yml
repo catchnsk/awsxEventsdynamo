@@ -27,36 +27,16 @@ servers:
   - url: https://api.sandbox.mycorp.example
     description: Sandbox
 paths:
-  /events/{domain}/{eventName}/{version}:
+  /events:
     post:
       summary: Validate and publish an event payload
       description: >-
         Validates an inbound payload against the configured schema (JSON Schema or Avro Schema) and publishes it to the matching MSK ingress topic.
+        The domain, eventName, and version are provided in the request body.
         If EVENT_SCHEMA_DEFINITION (JSON Schema) exists, validates with JSON Schema and publishes as JSON.
         If only EVENT_SCHEMA_DEFINITION_AVRO exists, validates with Avro Schema and publishes as Avro binary.
       operationId: publishEvent
       parameters:
-        - name: domain
-          in: path
-          required: true
-          schema:
-            type: string
-          description: Producer domain used for routing and topic derivation
-          example: demo
-        - name: eventName
-          in: path
-          required: true
-          schema:
-            type: string
-          description: Logical event name (e.g., CustomerUpdated)
-          example: CustomerUpdated
-        - name: version
-          in: path
-          required: true
-          schema:
-            type: string
-          description: Event schema version (e.g., v1)
-          example: v1
         - name: Content-Type
           in: header
           required: false
@@ -79,12 +59,33 @@ paths:
           description: Optional idempotency key for duplicate detection
       requestBody:
         required: true
-        description: Event payload in JSON, XML, or Avro format
+        description: Event payload with domain, eventName, version, and data
         content:
           application/json:
             schema:
               type: object
-              additionalProperties: true
+              required:
+                - domain
+                - eventName
+                - version
+                - data
+              properties:
+                domain:
+                  type: string
+                  description: Producer domain used for routing and topic derivation
+                  example: payments
+                eventName:
+                  type: string
+                  description: Logical event name (e.g., CustomerUpdated)
+                  example: transactionCreated
+                version:
+                  type: string
+                  description: Event schema version (e.g., v1)
+                  example: v1
+                data:
+                  type: object
+                  description: The actual event payload to validate
+                  additionalProperties: true
           application/xml:
             schema:
               type: string
