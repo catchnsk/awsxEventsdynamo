@@ -39,12 +39,48 @@ public class DynamoSchemaService implements SchemaService {
     public Mono<SchemaDefinition> fetchSchema(SchemaReference reference) {
         return Mono.fromCallable(() -> {
                     try {
-                        Map<String, AttributeValue> item = dynamoDbClient.getItem(GetItemRequest.builder()
-                                .tableName(properties.dynamodb().tableName())
-                                .key(Map.of(
-                                        "PK", AttributeValue.builder().s(reference.partitionKey()).build(),
-                                        "SK", AttributeValue.builder().s(reference.sortKey()).build()))
-                                .build()).item();
+                        // First try to query by PK/SK format (if data follows expected format)
+                        Map<String, AttributeValue> item = null;
+                        try {
+                            item = dynamoDbClient.getItem(GetItemRequest.builder()
+                                    .tableName(properties.dynamodb().tableName())
+                                    .key(Map.of(
+                                            "PK", AttributeValue.builder().s(reference.partitionKey()).build(),
+                                            "SK", AttributeValue.builder().s(reference.sortKey()).build()))
+                                    .build()).item();
+                        } catch (Exception e) {
+                            log.debug("GetItem by PK/SK failed, trying scan with filter: {}", e.getMessage());
+                        }
+
+                        // If GetItem didn't return a result, try scanning with filter expression
+                        if (item == null || item.isEmpty()) {
+                            log.debug("Querying schema by attributes: domain={}, event={}, version={}", 
+                                    reference.domain(), reference.eventName(), reference.version());
+                            
+                            Map<String, AttributeValue> expressionAttributeValues = new HashMap<>();
+                            expressionAttributeValues.put(":domain", AttributeValue.builder().s(reference.domain()).build());
+                            expressionAttributeValues.put(":eventName", AttributeValue.builder().s(reference.eventName()).build());
+                            expressionAttributeValues.put(":version", AttributeValue.builder().s(reference.version()).build());
+                            
+                            ScanRequest scanRequest = ScanRequest.builder()
+                                    .tableName(properties.dynamodb().tableName())
+                                    .filterExpression("PRODUCER_DOMAIN = :domain AND EVENT_NAME = :eventName AND VERSION = :version")
+                                    .expressionAttributeValues(expressionAttributeValues)
+                                    .build();
+                            
+                            ScanResponse scanResponse = dynamoDbClient.scan(scanRequest);
+                            
+                            if (scanResponse.items().isEmpty()) {
+                                log.debug("No schema found for domain={}, event={}, version={}", 
+                                        reference.domain(), reference.eventName(), reference.version());
+                                return null;
+                            }
+                            
+                            // Use the first matching item
+                            item = scanResponse.items().get(0);
+                            log.debug("Found schema via scan for domain={}, event={}, version={}", 
+                                    reference.domain(), reference.eventName(), reference.version());
+                        }
 
                         if (item == null || item.isEmpty()) {
                             return null;
@@ -70,7 +106,8 @@ public class DynamoSchemaService implements SchemaService {
                                 avroSchema,
                                 formatType,
                                 "ACTIVE".equals(stringValue(item, "EVENT_SCHEMA_STATUS", "INACTIVE")),
-                                Instant.parse(stringValue(item, "UPDATE_TS", Instant.now().toString()))
+                                Instant.parse(stringValue(item, "UPDATE_TS", Instant.now().toString())),
+                                stringValue(item, "EVENT_SCHEMA_ID", null)
                         );
                     } catch (ResourceNotFoundException e) {
                         log.error("DynamoDB table '{}' not found", properties.dynamodb().tableName(), e);
@@ -94,15 +131,23 @@ public class DynamoSchemaService implements SchemaService {
     public Flux<SchemaDefinition> fetchAllSchemas() {
         return Mono.fromCallable(() -> {
                     try {
+                        String tableName = properties.dynamodb().tableName();
+                        log.debug("Scanning DynamoDB table: {}", tableName);
+                        
                         ScanResponse scanResponse = dynamoDbClient.scan(ScanRequest.builder()
-                                .tableName(properties.dynamodb().tableName())
+                                .tableName(tableName)
                                 .build());
+                        
+                        log.debug("Scan completed. Found {} items in table {}", 
+                                scanResponse.items().size(), tableName);
                         return scanResponse;
                     } catch (ResourceNotFoundException e) {
-                        log.error("DynamoDB table '{}' not found", properties.dynamodb().tableName(), e);
+                        log.error("DynamoDB table '{}' not found. Error details: {}", 
+                                properties.dynamodb().tableName(), e.getMessage(), e);
                         throw new DynamoDbException("DynamoDB table '" + properties.dynamodb().tableName() + "' does not exist", e);
                     } catch (SdkException e) {
-                        log.error("DynamoDB error while fetching all schemas: {}", e.getMessage(), e);
+                        log.error("DynamoDB error while fetching all schemas from table '{}': {}", 
+                                properties.dynamodb().tableName(), e.getMessage(), e);
                         throw new DynamoDbException("DynamoDB service unavailable: " + e.getMessage(), e);
                     }
                 })
@@ -218,13 +263,17 @@ public class DynamoSchemaService implements SchemaService {
                 }
             }
 
+            // Extract EVENT_SCHEMA_ID from DynamoDB item
+            String eventSchemaId = stringValue(item, "EVENT_SCHEMA_ID", null);
+
             return new SchemaDefinition(
                     reference,
                     jsonSchema,
                     avroSchema,
                     formatType,
                     isActive,
-                    updateTs
+                    updateTs,
+                    eventSchemaId
             );
         } catch (Exception e) {
             // Log and skip invalid items instead of throwing

@@ -1,0 +1,32 @@
+{
+    "TableName": "event_schema",
+    "Item": {
+      "PK": { "S": "SCHEMA_0009" },
+      "SK": { "S": "v1.0" },
+  
+      "EVENT_SCHEMA_ID": { "S": "SCHEMA_0009" },
+      "PRODUCER_DOMAIN": { "S": "apply" },
+      "EVENT_NAME": { "S": "cardactivate" },
+      "VERSION": { "S": "1.0" },
+      "EVENT_SCHEMA_HEADER": { "S": "Standard event header with ID, domain, version, and timestamp" },
+  
+
+
+
+      "EVENT_SCHEMA_DEFINITION": { 
+        "S": "{\"$schema\":\"http://json-schema.org/draft-07/schema#\",\"type\":\"object\",\"title\":\"TransactionCreatedEventData\",\"description\":\"Schema for transactionCreated event data\",\"required\":[\"transactionId\",\"customerId\"],\"properties\":{\"transactionId\":{\"type\":\"string\",\"description\":\"Unique identifier for the transaction\"},\"customerId\":{\"type\":\"string\",\"description\":\"Identifier for the customer\"},\"date\":{\"type\":\"string\",\"format\":\"date-time\",\"description\":\"Date and time of the transaction\"}}}" },
+     "EVENT_SAMPLE": { "S": "{\"transactionId\":\"txn-999\",\"customerId\":\"cust-001\",\"date\":\"2025-12-05T23:00:00Z\"}" },
+  
+      "EVENT_SCHEMA_STATUS": { "S": "ACTIVE" },
+      "HAS_SENSITIVE_DATA": { "S": "NO" },
+      "PRODUCER_SYSTEM_USERS_ID": { "S": "systemuser123" },
+      "TOPIC_NAME": { "S": "wh.ingress.apply.cardactivate" },
+      "TOPIC_STATUS": { "S": "ACTIVE" },
+  
+      "INSERT_TS": { "S": "2025-12-05T00:00:00Z" },
+      "INSERT_USER": { "S": "system" },
+      "UPDATE_TS": { "S": "2025-12-05T00:00:00Z" },
+      "UPDATE_USER": { "S": "system" }
+    }
+  }
+  

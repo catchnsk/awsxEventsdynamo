@@ -121,7 +121,8 @@ public class CachingSchemaService implements SchemaService {
                                 avroSchema,
                                 formatType,
                                 "ACTIVE".equals(schemaDetail.eventSchemaStatus()),
-                                schemaDetail.updateTs()
+                                schemaDetail.updateTs(),
+                                schemaDetail.eventSchemaId()
                         );
                         schemaCache.put(reference, definition);
                     }

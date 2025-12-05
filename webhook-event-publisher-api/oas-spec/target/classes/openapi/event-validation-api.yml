@@ -27,7 +27,76 @@ servers:
   - url: https://api.sandbox.mycorp.example
     description: Sandbox
 paths:
-  /events:
+  /webhook/event/pub:
+    post:
+      summary: Publish CloudEvents format event
+      description: >-
+        Validates and publishes a CloudEvents format event payload. The event must include mandatory fields:
+        id (UUID), type, source, subject, specVersion, and time. The data field contains the event payload
+        which will be validated against the JSON Schema stored in DynamoDB EVENT_SCHEMA_DEFINITION column.
+        The schema is looked up based on source (domain), subject (eventName), and specVersion (version).
+        Validated events are published to the matching MSK ingress topic.
+      operationId: publishCloudEvent
+      parameters:
+        - name: Content-Type
+          in: header
+          required: false
+          schema:
+            type: string
+            enum: [application/json]
+          description: Format of the incoming payload (defaults to application/json)
+        - name: X-Event-Id
+          in: header
+          required: false
+          schema:
+            type: string
+            format: uuid
+          description: Optional event ID override (uses payload id if not provided)
+        - name: Idempotency-Key
+          in: header
+          required: false
+          schema:
+            type: string
+          description: Optional idempotency key for duplicate detection
+      requestBody:
+        required: true
+        description: CloudEvents format event payload
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CloudEvent'
+      responses:
+        '202':
+          description: Event accepted and published to Kafka
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AckResponse'
+        '400':
+          description: Validation failed, missing mandatory fields, or schema definition not configured
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Schema not found for the given source, subject, and specVersion
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: DynamoDB table not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: Kafka or DynamoDB service unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /webhook/event/publisher:
     post:
       summary: Validate and publish an event payload
       description: >-
@@ -293,6 +362,54 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
 components:
   schemas:
+    CloudEvent:
+      type: object
+      description: CloudEvents format event payload
+      required:
+        - id
+        - type
+        - source
+        - subject
+        - specVersion
+        - time
+        - data
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier for the event instance
+          example: F701560E-A31B-4748-927F-2655CAF785F9
+        type:
+          type: string
+          description: Type of event (e.g., com.bee.us.card.activation)
+          example: com.bee.us.card.activation
+        source:
+          type: string
+          description: Source domain/system that produced the event (maps to PRODUCER_DOMAIN in DynamoDB)
+          example: payments
+        subject:
+          type: string
+          description: Event name/subject (maps to EVENT_NAME in DynamoDB)
+          example: transactionCreated
+        specVersion:
+          type: string
+          description: CloudEvents specification version (maps to VERSION in DynamoDB)
+          example: "1.0"
+        time:
+          type: string
+          format: date-time
+          description: ISO 8601 timestamp when the event occurred
+          example: "2025-11-13T23:00:00Z"
+        data:
+          type: object
+          description: Event payload data (validated against JSON Schema from EVENT_SCHEMA_DEFINITION in DynamoDB)
+          additionalProperties: true
+          example:
+            transactionId: "txn-999"
+            customerId: "cust-001"
+            amount: 150.75
+            currency: "USD"
+            status: "SUCCESS"
     EventPayload:
       type: object
       required:
@@ -330,6 +447,11 @@ components:
         schemaId:
           type: string
           description: Unique schema identifier
+        eventSchemaId:
+          type: string
+          description: The EVENT_SCHEMA_ID from DynamoDB (actual schema identifier stored in database)
+          nullable: true
+          example: SCHEMA_0001
         formatType:
           type: string
           enum: [JSON_SCHEMA, AVRO_SCHEMA]
@@ -350,6 +472,10 @@ components:
         avroSchema:
           type: string
           description: Avro Schema definition (used when formatType is AVRO_SCHEMA)
+          nullable: true
+        eventSchemaDefinition:
+          type: string
+          description: Event schema definition (EVENT_SCHEMA_DEFINITION from DynamoDB). Contains JSON Schema if formatType is JSON_SCHEMA, or Avro Schema if formatType is AVRO_SCHEMA.
           nullable: true
         updatedAt:
           type: string

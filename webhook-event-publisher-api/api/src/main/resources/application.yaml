@@ -15,6 +15,7 @@ management:
 webhooks:
   dynamodb:
     table-name: event_schema
+    idempotency-ledger-table-name: EVENT_IDEMPOTENCY_LEDGER
   kafka:
     bootstrap-servers: localhost:9092
     ingress-topic-prefix: wh.ingress

@@ -42,7 +42,8 @@ class JsonSchemaValidatorTest {
                 null,
                 SchemaFormatType.JSON_SCHEMA,
                 true,
-                Instant.now()
+                Instant.now(),
+                null
         );
 
         String payload = "{\"customerId\":\"123\",\"status\":\"ACTIVE\"}";
@@ -73,7 +74,8 @@ class JsonSchemaValidatorTest {
                 null,
                 SchemaFormatType.JSON_SCHEMA,
                 true,
-                Instant.now()
+                Instant.now(),
+                null
         );
 
         // Missing required field customerId
@@ -105,7 +107,8 @@ class JsonSchemaValidatorTest {
                 null,
                 SchemaFormatType.JSON_SCHEMA,
                 true,
-                Instant.now()
+                Instant.now(),
+                null
         );
 
         // age should be number, not string
@@ -125,7 +128,8 @@ class JsonSchemaValidatorTest {
                 null,
                 SchemaFormatType.JSON_SCHEMA,
                 true,
-                Instant.now()
+                Instant.now(),
+                null
         );
 
         String payload = "{\"customerId\":\"123\"}";

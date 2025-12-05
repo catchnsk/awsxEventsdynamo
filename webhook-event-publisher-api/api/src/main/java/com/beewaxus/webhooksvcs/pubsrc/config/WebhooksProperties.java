@@ -14,8 +14,13 @@ public record WebhooksProperties(
 ) {
 
     public record DynamoProperties(
-            String tableName
-    ) {}
+            String tableName,
+            String idempotencyLedgerTableName
+    ) {
+        public String idempotencyLedgerTableName() {
+            return idempotencyLedgerTableName != null ? idempotencyLedgerTableName : "EVENT_IDEMPOTENCY_LEDGER";
+        }
+    }
 
     public record KafkaProperties(
             String bootstrapServers,

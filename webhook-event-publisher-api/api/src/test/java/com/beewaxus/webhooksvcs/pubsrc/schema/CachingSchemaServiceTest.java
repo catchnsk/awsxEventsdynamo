@@ -26,7 +26,7 @@ class CachingSchemaServiceTest {
         delegate = Mockito.mock(DynamoSchemaService.class);
 
         WebhooksProperties properties = new WebhooksProperties(
-                new WebhooksProperties.DynamoProperties("event_schema"),
+                new WebhooksProperties.DynamoProperties("event_schema", "EVENT_IDEMPOTENCY_LEDGER"),
                 new WebhooksProperties.KafkaProperties(
                         "localhost:9092",
                         "wh.ingress",
@@ -48,7 +48,7 @@ class CachingSchemaServiceTest {
     @Test
     void fetchSchema_UsesCachedValueOnSubsequentCalls() {
         SchemaReference reference = new SchemaReference("demo", "CustomerUpdated", "v1");
-        SchemaDefinition schemaDefinition = new SchemaDefinition(reference, null, "{}", SchemaFormatType.AVRO_SCHEMA, true, Instant.now());
+        SchemaDefinition schemaDefinition = new SchemaDefinition(reference, null, "{}", SchemaFormatType.AVRO_SCHEMA, true, Instant.now(), null);
 
         when(delegate.fetchSchema(reference)).thenReturn(Mono.just(schemaDefinition));
 
@@ -101,7 +101,7 @@ class CachingSchemaServiceTest {
     @Test
     void fetchSchema_WhenCacheDisabled_DoesNotUseCache() {
         WebhooksProperties disabledProps = new WebhooksProperties(
-                new WebhooksProperties.DynamoProperties("event_schema"),
+                new WebhooksProperties.DynamoProperties("event_schema", "EVENT_IDEMPOTENCY_LEDGER"),
                 new WebhooksProperties.KafkaProperties(
                         "localhost:9092",
                         "wh.ingress",
@@ -119,7 +119,7 @@ class CachingSchemaServiceTest {
 
         CachingSchemaService disabledService = new CachingSchemaService(delegate, disabledProps);
         SchemaReference reference = new SchemaReference("demo", "CustomerUpdated", "v1");
-        SchemaDefinition schemaDefinition = new SchemaDefinition(reference, null, "{}", SchemaFormatType.AVRO_SCHEMA, true, Instant.now());
+        SchemaDefinition schemaDefinition = new SchemaDefinition(reference, null, "{}", SchemaFormatType.AVRO_SCHEMA, true, Instant.now(), null);
 
         when(delegate.fetchSchema(reference)).thenReturn(Mono.just(schemaDefinition));
 
@@ -137,7 +137,7 @@ class CachingSchemaServiceTest {
     @Test
     void evictAndReload_ClearsAndReloadsCache() {
         SchemaReference reference = new SchemaReference("demo", "CustomerUpdated", "v1");
-        SchemaDefinition schemaDefinition = new SchemaDefinition(reference, null, "{}", SchemaFormatType.AVRO_SCHEMA, true, Instant.now());
+        SchemaDefinition schemaDefinition = new SchemaDefinition(reference, null, "{}", SchemaFormatType.AVRO_SCHEMA, true, Instant.now(), null);
 
         when(delegate.fetchSchema(reference)).thenReturn(Mono.just(schemaDefinition));
         when(delegate.fetchAllSchemas()).thenReturn(Flux.just(schemaDefinition));

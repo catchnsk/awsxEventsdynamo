@@ -245,7 +245,8 @@ class EventControllerTest {
                     avroSchema,  // avroSchema
                     SchemaFormatType.AVRO_SCHEMA,  // formatType
                     true,
-                    Instant.now()
+                    Instant.now(),
+                    null  // eventSchemaId
             );
 
             String jsonSchema = """
@@ -265,7 +266,8 @@ class EventControllerTest {
                     null,  // avroSchema
                     SchemaFormatType.JSON_SCHEMA,  // formatType
                     true,
-                    Instant.now()
+                    Instant.now(),
+                    null  // eventSchemaId
             );
 
             return new SchemaService() {
@@ -524,7 +526,8 @@ class EventControllerTest {
             // Create test WebhooksProperties with default values
             return new WebhooksProperties(
                     new WebhooksProperties.DynamoProperties(
-                            "event_schema"
+                            "event_schema",
+                            "EVENT_IDEMPOTENCY_LEDGER"
                     ),
                     new WebhooksProperties.KafkaProperties(
                             "localhost:9092",

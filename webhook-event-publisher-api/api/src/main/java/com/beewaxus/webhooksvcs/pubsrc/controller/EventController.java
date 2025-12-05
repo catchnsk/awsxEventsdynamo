@@ -4,8 +4,10 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.beewaxus.webhooksvcs.api.DefaultApi;
 import com.beewaxus.webhooksvcs.api.model.AckResponse;
+import com.beewaxus.webhooksvcs.api.model.CloudEvent;
 import com.beewaxus.webhooksvcs.api.model.SchemaMetadata;
 import com.beewaxus.webhooksvcs.pubsrc.config.WebhooksProperties;
+import com.beewaxus.webhooksvcs.pubsrc.ledger.IdempotencyLedgerService;
 import com.beewaxus.webhooksvcs.pubsrc.converter.AvroSerializer;
 import com.beewaxus.webhooksvcs.pubsrc.converter.FormatConverter;
 import com.beewaxus.webhooksvcs.pubsrc.model.EventEnvelope;
@@ -20,7 +22,8 @@ import com.beewaxus.webhooksvcs.pubsrc.schema.SchemaService;
 import com.beewaxus.webhooksvcs.pubsrc.validation.AvroSchemaValidator;
 import com.beewaxus.webhooksvcs.pubsrc.validation.JsonSchemaValidator;
 import com.beewaxus.webhooksvcs.pubsrc.schema.SchemaFormatType;
-import jakarta.validation.constraints.NotBlank;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericDatumReader;
 import org.apache.avro.generic.GenericRecord;
@@ -50,6 +53,8 @@ import static org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR;
 @Validated
 public class EventController implements DefaultApi {
 
+    private static final Logger log = LoggerFactory.getLogger(EventController.class);
+
     private final SchemaService schemaService;
     private final AvroSchemaValidator avroSchemaValidator;
     private final JsonSchemaValidator jsonSchemaValidator;
@@ -58,6 +63,7 @@ public class EventController implements DefaultApi {
     private final ObjectMapper objectMapper;
     private final AvroSerializer avroSerializer;
     private final WebhooksProperties properties;
+    private final IdempotencyLedgerService idempotencyLedgerService;
 
     public EventController(SchemaService schemaService,
                            AvroSchemaValidator avroSchemaValidator,
@@ -66,7 +72,8 @@ public class EventController implements DefaultApi {
                            EventPublisher eventPublisher,
                            ObjectMapper objectMapper,
                            AvroSerializer avroSerializer,
-                           WebhooksProperties properties) {
+                           WebhooksProperties properties,
+                           IdempotencyLedgerService idempotencyLedgerService) {
         this.schemaService = schemaService;
         this.avroSchemaValidator = avroSchemaValidator;
         this.jsonSchemaValidator = jsonSchemaValidator;
@@ -75,6 +82,7 @@ public class EventController implements DefaultApi {
         this.objectMapper = objectMapper;
         this.avroSerializer = avroSerializer;
         this.properties = properties;
+        this.idempotencyLedgerService = idempotencyLedgerService;
     }
 
     @Override
@@ -144,6 +152,214 @@ public class EventController implements DefaultApi {
                     AckResponse response = new AckResponse();
                     response.setEventId(UUID.fromString(id));
                     return ResponseEntity.accepted().body(response);
+                });
+    }
+
+    @Override
+    public Mono<ResponseEntity<AckResponse>> publishCloudEvent(
+            Mono<CloudEvent> cloudEvent,
+            String contentType,
+            UUID xEventId,
+            String idempotencyKey,
+            ServerWebExchange exchange) {
+
+        return cloudEvent
+                .switchIfEmpty(Mono.error(new ResponseStatusException(BAD_REQUEST, "CloudEvent body required")))
+                .flatMap(event -> {
+                    // Use event.id as the event ID (or override from header if provided)
+                    String eventId = xEventId != null ? xEventId.toString() : event.getId().toString();
+                    String idempotencyKeyValue = idempotencyKey != null ? idempotencyKey : eventId;
+
+                    // Validate mandatory fields
+                    if (event.getSource() == null || event.getSource().isEmpty()) {
+                        return Mono.error(new ResponseStatusException(BAD_REQUEST, "source field is required"));
+                    }
+                    if (event.getSubject() == null || event.getSubject().isEmpty()) {
+                        return Mono.error(new ResponseStatusException(BAD_REQUEST, "subject field is required"));
+                    }
+                    if (event.getSpecVersion() == null || event.getSpecVersion().isEmpty()) {
+                        return Mono.error(new ResponseStatusException(BAD_REQUEST, "specVersion field is required"));
+                    }
+                    if (event.getData() == null || event.getData().isEmpty()) {
+                        return Mono.error(new ResponseStatusException(BAD_REQUEST, "data field is required"));
+                    }
+
+                    // Map CloudEvents fields to schema lookup: source → PRODUCER_DOMAIN, subject → EVENT_NAME, specVersion → VERSION
+                    SchemaReference reference = new SchemaReference(
+                            event.getSource(),  // source → PRODUCER_DOMAIN
+                            event.getSubject(), // subject → EVENT_NAME
+                            event.getSpecVersion() // specVersion → VERSION
+                    );
+
+                    // Fetch schema from DynamoDB
+                    return schemaService.fetchSchema(reference)
+                            .switchIfEmpty(Mono.error(new ResponseStatusException(NOT_FOUND, 
+                                    "Schema not found for source=" + event.getSource() + 
+                                    ", subject=" + event.getSubject() + 
+                                    ", specVersion=" + event.getSpecVersion())))
+                            .onErrorMap(DynamoDbException.class, e -> {
+                                if (e.getMessage().contains("does not exist")) {
+                                    return new ResponseStatusException(INTERNAL_SERVER_ERROR, 
+                                            "DynamoDB table not found: " + e.getMessage(), e);
+                                }
+                                return new ResponseStatusException(SERVICE_UNAVAILABLE, 
+                                        "DynamoDB service unavailable: " + e.getMessage(), e);
+                            })
+                            .flatMap(schemaDefinition -> {
+                                log.info("Fetched schema definition for source={}, subject={}, specVersion={}. " +
+                                        "Has JSON Schema: {}, Has Avro Schema: {}, Format Type: {}, Event Schema ID: {}", 
+                                        event.getSource(), event.getSubject(), event.getSpecVersion(),
+                                        schemaDefinition.jsonSchema() != null && !schemaDefinition.jsonSchema().isEmpty(),
+                                        schemaDefinition.avroSchema() != null && !schemaDefinition.avroSchema().isEmpty(),
+                                        schemaDefinition.formatType(),
+                                        schemaDefinition.eventSchemaId());
+                                
+                                // Validate that JSON Schema exists (required for this endpoint)
+                                if (schemaDefinition.jsonSchema() == null || schemaDefinition.jsonSchema().isEmpty()) {
+                                    log.error("JSON Schema (EVENT_SCHEMA_DEFINITION) not configured for source={}, subject={}, specVersion={}", 
+                                            event.getSource(), event.getSubject(), event.getSpecVersion());
+                                    return Mono.error(new ResponseStatusException(BAD_REQUEST, 
+                                            "JSON Schema (EVENT_SCHEMA_DEFINITION) not configured for this event"));
+                                }
+
+                                // Check if EVENT_SCHEMA_DEFINITION is actually an Avro schema (starts with {"type":"record"})
+                                String jsonSchemaStr = schemaDefinition.jsonSchema();
+                                if (jsonSchemaStr != null && jsonSchemaStr.trim().startsWith("{\"type\":\"record\"")) {
+                                    log.error("EVENT_SCHEMA_DEFINITION contains Avro schema instead of JSON Schema for source={}, subject={}, specVersion={}. " +
+                                            "Schema preview: {}", 
+                                            event.getSource(), event.getSubject(), event.getSpecVersion(),
+                                            jsonSchemaStr.length() > 200 ? jsonSchemaStr.substring(0, 200) + "..." : jsonSchemaStr);
+                                    return Mono.error(new ResponseStatusException(BAD_REQUEST, 
+                                            "EVENT_SCHEMA_DEFINITION contains an Avro schema, but this endpoint requires a JSON Schema. " +
+                                            "Please provide a valid JSON Schema in EVENT_SCHEMA_DEFINITION or use EVENT_SCHEMA_DEFINITION_AVRO for Avro schemas."));
+                                }
+
+                                // Convert data to JsonNode for validation
+                                JsonNode dataJsonNode = objectMapper.valueToTree(event.getData());
+                                
+                                log.info("Validating CloudEvent data. Source: {}, Subject: {}, SpecVersion: {}, Data: {}", 
+                                        event.getSource(), event.getSubject(), event.getSpecVersion(), dataJsonNode.toString());
+                                if (jsonSchemaStr != null) {
+                                    log.info("Using JSON Schema for validation (length: {} chars). Schema preview (first 500 chars): {}", 
+                                            jsonSchemaStr.length(), 
+                                            jsonSchemaStr.length() > 500 ? jsonSchemaStr.substring(0, 500) + "..." : jsonSchemaStr);
+                                }
+                                
+                                // Validate data against JSON Schema
+                                return jsonSchemaValidator.validate(dataJsonNode, schemaDefinition)
+                                        .flatMap(validatedJson -> {
+                                            // Construct topic name: {prefix}.{domain}.{eventName}
+                                            String topicName = "%s.%s.%s".formatted(
+                                                    properties.kafka().ingressTopicPrefix(),
+                                                    reference.domain(),
+                                                    reference.eventName()
+                                            );
+
+                                            // Create EventEnvelope
+                                            EventEnvelope envelope = new EventEnvelope(
+                                                    eventId,
+                                                    reference,
+                                                    objectMapper.valueToTree(Map.of(
+                                                            "type", event.getType() != null ? event.getType() : "",
+                                                            "source", event.getSource(),
+                                                            "subject", event.getSubject(),
+                                                            "specVersion", event.getSpecVersion(),
+                                                            "time", event.getTime() != null ? event.getTime().toString() : ""
+                                                    )),
+                                                    event.getTime() != null ? event.getTime().toInstant() : Instant.now(),
+                                                    Map.of(
+                                                            "Idempotency-Key", idempotencyKeyValue,
+                                                            "Event-Type", event.getType() != null ? event.getType() : "",
+                                                            "Source", event.getSource()
+                                                    ),
+                                                    SchemaFormatType.JSON_SCHEMA
+                                            );
+
+                                            // Publish to Kafka
+                                            return eventPublisher.publishJson(envelope, topicName, validatedJson)
+                                                    .flatMap(publishedEventId -> {
+                                                        // Construct schema ID from reference (format: SCHEMA_{DOMAIN}_{EVENT}_{VERSION})
+                                                        String schemaId = String.format("SCHEMA_%s_%s_%s",
+                                                                reference.domain().toUpperCase(),
+                                                                reference.eventName().toUpperCase(),
+                                                                reference.version().toUpperCase().replace(".", "_"));
+                                                        
+                                                        // Record status in idempotency ledger
+                                                        return idempotencyLedgerService.recordEventStatus(
+                                                                publishedEventId,
+                                                                IdempotencyLedgerService.EventStatus.EVENT_READY_FOR_DELIVERY,
+                                                                schemaId
+                                                        )
+                                                        .thenReturn(publishedEventId);
+                                                    })
+                                                    .onErrorResume(KafkaPublishException.class, e -> {
+                                                        // Record failure in ledger (fire and forget)
+                                                        idempotencyLedgerService.recordEventStatus(
+                                                                eventId,
+                                                                IdempotencyLedgerService.EventStatus.EVENT_DELIVERY_FAILED,
+                                                                null
+                                                        ).subscribe(
+                                                                null,
+                                                                error -> log.error("Failed to record delivery failure in ledger", error)
+                                                        );
+                                                        return Mono.error(new ResponseStatusException(SERVICE_UNAVAILABLE, 
+                                                                "Kafka is unavailable: " + e.getMessage(), e));
+                                                    });
+                                        })
+                                        .onErrorResume(throwable -> {
+                                            if (throwable instanceof ResponseStatusException) {
+                                                return Mono.error(throwable);
+                                            }
+                                            
+                                            // Extract detailed error message - get root cause
+                                            Throwable rootCause = throwable;
+                                            while (rootCause.getCause() != null && rootCause.getCause() != rootCause) {
+                                                rootCause = rootCause.getCause();
+                                            }
+                                            
+                                            String errorMessage = rootCause.getMessage();
+                                            if (errorMessage == null || errorMessage.isEmpty()) {
+                                                errorMessage = rootCause.getClass().getSimpleName();
+                                            }
+                                            
+                                            // Log full exception details for debugging
+                                            log.error("JSON Schema validation failed for CloudEvent. Source: {}, Subject: {}, SpecVersion: {}, " +
+                                                    "Error Type: {}, Error Message: {}, Root Cause: {}", 
+                                                    event.getSource(), event.getSubject(), event.getSpecVersion(), 
+                                                    throwable.getClass().getName(), errorMessage, rootCause.getClass().getName(), throwable);
+                                            
+                                            // Log the data and schema that failed validation
+                                            log.error("Failed validation details - Data: {}, Schema length: {}", 
+                                                    dataJsonNode.toString(), jsonSchemaStr.length());
+                                            
+                                            // Record processing failure (fire and forget)
+                                            idempotencyLedgerService.recordEventStatus(
+                                                    eventId,
+                                                    IdempotencyLedgerService.EventStatus.EVENT_PROCESSING_FAILED,
+                                                    null
+                                            ).subscribe(
+                                                    null,
+                                                    error -> log.error("Failed to record processing failure in ledger", error)
+                                            );
+                                            
+                                            // Return error with full message
+                                            return Mono.error(new ResponseStatusException(BAD_REQUEST, 
+                                                    errorMessage, throwable));
+                                        });
+                            });
+                })
+                .map(publishedEventId -> {
+                    AckResponse response = new AckResponse();
+                    response.setEventId(UUID.fromString(publishedEventId));
+                    return ResponseEntity.accepted().body(response);
+                })
+                .onErrorMap(throwable -> {
+                    if (throwable instanceof ResponseStatusException) {
+                        return throwable;
+                    }
+                    return new ResponseStatusException(INTERNAL_SERVER_ERROR, 
+                            throwable.getMessage() != null ? throwable.getMessage() : "An unexpected error occurred", 
+                            throwable);
                 });
     }
 
@@ -447,7 +663,8 @@ public class EventController implements DefaultApi {
                 avroSchema,
                 formatType,
                 "ACTIVE".equals(detail.eventSchemaStatus()),
-                detail.updateTs()
+                detail.updateTs(),
+                detail.eventSchemaId()
         );
     }
 
@@ -608,6 +825,11 @@ public class EventController implements DefaultApi {
                 schemaDefinition.reference().eventName().toUpperCase(),
                 schemaDefinition.reference().version().toUpperCase());
         metadata.setSchemaId(schemaId);
+        
+        // Set eventSchemaId from DynamoDB if available
+        if (schemaDefinition.eventSchemaId() != null && !schemaDefinition.eventSchemaId().isEmpty()) {
+            metadata.setEventSchemaId(org.openapitools.jackson.nullable.JsonNullable.of(schemaDefinition.eventSchemaId()));
+        }
 
         SchemaMetadata.FormatTypeEnum formatType = schemaDefinition.formatType() == SchemaFormatType.JSON_SCHEMA
                 ? SchemaMetadata.FormatTypeEnum.JSON_SCHEMA
@@ -627,6 +849,16 @@ public class EventController implements DefaultApi {
         }
         if (schemaDefinition.avroSchema() != null && !schemaDefinition.avroSchema().isEmpty()) {
             metadata.setAvroSchema(org.openapitools.jackson.nullable.JsonNullable.of(schemaDefinition.avroSchema()));
+        }
+
+        // Set eventSchemaDefinition - contains the primary schema definition from EVENT_SCHEMA_DEFINITION
+        // For JSON_SCHEMA format, use jsonSchema; for AVRO_SCHEMA format, use avroSchema
+        if (schemaDefinition.formatType() == SchemaFormatType.JSON_SCHEMA 
+                && schemaDefinition.jsonSchema() != null && !schemaDefinition.jsonSchema().isEmpty()) {
+            metadata.setEventSchemaDefinition(org.openapitools.jackson.nullable.JsonNullable.of(schemaDefinition.jsonSchema()));
+        } else if (schemaDefinition.formatType() == SchemaFormatType.AVRO_SCHEMA 
+                && schemaDefinition.avroSchema() != null && !schemaDefinition.avroSchema().isEmpty()) {
+            metadata.setEventSchemaDefinition(org.openapitools.jackson.nullable.JsonNullable.of(schemaDefinition.avroSchema()));
         }
 
         if (schemaDefinition.updatedAt() != null) {

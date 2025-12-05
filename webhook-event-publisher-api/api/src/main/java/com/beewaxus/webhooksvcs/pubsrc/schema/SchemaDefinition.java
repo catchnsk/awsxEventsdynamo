@@ -8,7 +8,8 @@ public record SchemaDefinition(
         String avroSchema,         // Avro Schema from EVENT_SCHEMA_DEFINITION_AVRO
         SchemaFormatType formatType, // Determines validation and serialization format
         boolean active,
-        Instant updatedAt
+        Instant updatedAt,
+        String eventSchemaId       // EVENT_SCHEMA_ID from DynamoDB (optional)
 ) {
     // Backward compatibility: use Avro schema if JSON schema is not available
     public String getValidationSchema() {
