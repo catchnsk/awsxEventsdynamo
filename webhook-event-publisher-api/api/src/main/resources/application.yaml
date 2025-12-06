@@ -27,6 +27,8 @@ webhooks:
     schema-ttl: PT24H
     schema-detail-ttl: PT24H
     maximum-entries: 1000
+  validation:
+    enabled: false  # Set to false to skip schema validation (for testing purposes only)
 
 aws:
   region: us-east-1

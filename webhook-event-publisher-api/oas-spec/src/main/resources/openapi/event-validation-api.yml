@@ -27,7 +27,7 @@ servers:
   - url: https://api.sandbox.mycorp.example
     description: Sandbox
 paths:
-  /webhook/event/pub:
+  /webhook/event/publisherCE:
     post:
       summary: Publish CloudEvents format event
       description: >-
@@ -193,7 +193,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-  /events/all:
+  /webhook/schema/all:
     get:
       summary: List all active schemas
       description: >-
@@ -215,7 +215,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-  /events/schema_id/{schemaId}:
+  /webhook/schema/schema_id/{schemaId}:
     get:
       summary: Retrieve schema by EVENT_SCHEMA_ID
       description: >-
@@ -327,7 +327,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-  /schemas/{domain}/{event}/{version}:
+  /webhook/schema/{domain}/{event}/{version}:
     get:
       summary: Retrieve schema metadata for a specific event version
       operationId: fetchSchema
@@ -356,6 +356,30 @@ paths:
                 $ref: '#/components/schemas/SchemaMetadata'
         '404':
           description: Schema not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /webhook/schema/evict/all:
+    post:
+      summary: Evict and reload all schema caches
+      description: >-
+        Clears all cached schema definitions and schema details, then reloads them from DynamoDB.
+        This endpoint is useful after updating schemas in DynamoDB to ensure the application
+        picks up the latest changes immediately without waiting for cache TTL expiration.
+        If caching is disabled, this operation has no effect.
+      operationId: evictAllCaches
+      tags:
+        - Cache Management
+      responses:
+        '200':
+          description: Cache eviction and reload completed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CacheEvictResponse'
+        '500':
+          description: Internal server error during cache eviction
           content:
             application/json:
               schema:
@@ -572,3 +596,13 @@ components:
         updateUser:
           type: string
           description: User who last updated the schema
+    CacheEvictResponse:
+      type: object
+      description: Response from cache eviction operation
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          description: Status message indicating cache eviction completion
+          example: Cache eviction completed

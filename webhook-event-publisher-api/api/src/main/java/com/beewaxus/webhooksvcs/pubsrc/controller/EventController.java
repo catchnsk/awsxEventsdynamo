@@ -163,7 +163,13 @@ public class EventController implements DefaultApi {
             String idempotencyKey,
             ServerWebExchange exchange) {
 
+        log.info("publishCloudEvent called - Content-Type: {}, X-Event-Id: {}, Idempotency-Key: {}, Path: {}", 
+                contentType, xEventId, idempotencyKey, exchange.getRequest().getPath().value());
+        
         return cloudEvent
+                .doOnNext(event -> log.info("CloudEvent received - ID: {}, Type: {}, Source: {}, Subject: {}, SpecVersion: {}", 
+                        event.getId(), event.getType(), event.getSource(), event.getSubject(), event.getSpecVersion()))
+                .doOnError(error -> log.error("Error receiving CloudEvent: {}", error.getMessage(), error))
                 .switchIfEmpty(Mono.error(new ResponseStatusException(BAD_REQUEST, "CloudEvent body required")))
                 .flatMap(event -> {
                     // Use event.id as the event ID (or override from header if provided)
@@ -206,47 +212,67 @@ public class EventController implements DefaultApi {
                                         "DynamoDB service unavailable: " + e.getMessage(), e);
                             })
                             .flatMap(schemaDefinition -> {
+                                // Check if validation is enabled FIRST
+                                boolean validationEnabled = properties.validation() != null && properties.validation().isEnabled();
+                                
                                 log.info("Fetched schema definition for source={}, subject={}, specVersion={}. " +
-                                        "Has JSON Schema: {}, Has Avro Schema: {}, Format Type: {}, Event Schema ID: {}", 
+                                        "Has JSON Schema: {}, Has Avro Schema: {}, Format Type: {}, Event Schema ID: {}, Validation Enabled: {}", 
                                         event.getSource(), event.getSubject(), event.getSpecVersion(),
                                         schemaDefinition.jsonSchema() != null && !schemaDefinition.jsonSchema().isEmpty(),
                                         schemaDefinition.avroSchema() != null && !schemaDefinition.avroSchema().isEmpty(),
                                         schemaDefinition.formatType(),
-                                        schemaDefinition.eventSchemaId());
+                                        schemaDefinition.eventSchemaId(),
+                                        validationEnabled);
                                 
-                                // Validate that JSON Schema exists (required for this endpoint)
-                                if (schemaDefinition.jsonSchema() == null || schemaDefinition.jsonSchema().isEmpty()) {
-                                    log.error("JSON Schema (EVENT_SCHEMA_DEFINITION) not configured for source={}, subject={}, specVersion={}", 
-                                            event.getSource(), event.getSubject(), event.getSpecVersion());
-                                    return Mono.error(new ResponseStatusException(BAD_REQUEST, 
-                                            "JSON Schema (EVENT_SCHEMA_DEFINITION) not configured for this event"));
+                                // Only validate schema existence and format if validation is enabled
+                                if (validationEnabled) {
+                                    // Validate that JSON Schema exists (required for this endpoint)
+                                    if (schemaDefinition.jsonSchema() == null || schemaDefinition.jsonSchema().isEmpty()) {
+                                        log.error("JSON Schema (EVENT_SCHEMA_DEFINITION) not configured for source={}, subject={}, specVersion={}", 
+                                                event.getSource(), event.getSubject(), event.getSpecVersion());
+                                        return Mono.error(new ResponseStatusException(BAD_REQUEST, 
+                                                "JSON Schema (EVENT_SCHEMA_DEFINITION) not configured for this event"));
+                                    }
+
+                                    // Check if EVENT_SCHEMA_DEFINITION is actually an Avro schema (starts with {"type":"record"})
+                                    String jsonSchemaStr = schemaDefinition.jsonSchema();
+                                    if (jsonSchemaStr != null && jsonSchemaStr.trim().startsWith("{\"type\":\"record\"")) {
+                                        log.error("EVENT_SCHEMA_DEFINITION contains Avro schema instead of JSON Schema for source={}, subject={}, specVersion={}. " +
+                                                "Schema preview: {}", 
+                                                event.getSource(), event.getSubject(), event.getSpecVersion(),
+                                                jsonSchemaStr.length() > 200 ? jsonSchemaStr.substring(0, 200) + "..." : jsonSchemaStr);
+                                        return Mono.error(new ResponseStatusException(BAD_REQUEST, 
+                                                "EVENT_SCHEMA_DEFINITION contains an Avro schema, but this endpoint requires a JSON Schema. " +
+                                                "Please provide a valid JSON Schema in EVENT_SCHEMA_DEFINITION or use EVENT_SCHEMA_DEFINITION_AVRO for Avro schemas."));
+                                    }
+                                } else {
+                                    log.warn("Schema validation is DISABLED (webhooks.validation.enabled=false). " +
+                                            "Skipping schema format checks and validation for testing purposes.");
                                 }
 
-                                // Check if EVENT_SCHEMA_DEFINITION is actually an Avro schema (starts with {"type":"record"})
-                                String jsonSchemaStr = schemaDefinition.jsonSchema();
-                                if (jsonSchemaStr != null && jsonSchemaStr.trim().startsWith("{\"type\":\"record\"")) {
-                                    log.error("EVENT_SCHEMA_DEFINITION contains Avro schema instead of JSON Schema for source={}, subject={}, specVersion={}. " +
-                                            "Schema preview: {}", 
-                                            event.getSource(), event.getSubject(), event.getSpecVersion(),
-                                            jsonSchemaStr.length() > 200 ? jsonSchemaStr.substring(0, 200) + "..." : jsonSchemaStr);
-                                    return Mono.error(new ResponseStatusException(BAD_REQUEST, 
-                                            "EVENT_SCHEMA_DEFINITION contains an Avro schema, but this endpoint requires a JSON Schema. " +
-                                            "Please provide a valid JSON Schema in EVENT_SCHEMA_DEFINITION or use EVENT_SCHEMA_DEFINITION_AVRO for Avro schemas."));
-                                }
-
-                                // Convert data to JsonNode for validation
+                                // Convert data to JsonNode
                                 JsonNode dataJsonNode = objectMapper.valueToTree(event.getData());
                                 
-                                log.info("Validating CloudEvent data. Source: {}, Subject: {}, SpecVersion: {}, Data: {}", 
-                                        event.getSource(), event.getSubject(), event.getSpecVersion(), dataJsonNode.toString());
-                                if (jsonSchemaStr != null) {
-                                    log.info("Using JSON Schema for validation (length: {} chars). Schema preview (first 500 chars): {}", 
-                                            jsonSchemaStr.length(), 
-                                            jsonSchemaStr.length() > 500 ? jsonSchemaStr.substring(0, 500) + "..." : jsonSchemaStr);
+                                log.info("Processing CloudEvent data. Source: {}, Subject: {}, SpecVersion: {}, Data: {}, Validation: {}", 
+                                        event.getSource(), event.getSubject(), event.getSpecVersion(), dataJsonNode.toString(), 
+                                        validationEnabled ? "ENABLED" : "DISABLED");
+                                
+                                // Validate data against JSON Schema (or skip if disabled)
+                                Mono<JsonNode> validatedJsonMono;
+                                if (!validationEnabled) {
+                                    log.warn("Skipping JSON Schema validation - validation is disabled for testing.");
+                                    validatedJsonMono = Mono.just(dataJsonNode);
+                                } else {
+                                    String jsonSchemaStr = schemaDefinition.jsonSchema();
+                                    if (jsonSchemaStr != null) {
+                                        log.info("Using JSON Schema for validation (length: {} chars). Schema preview (first 500 chars): {}", 
+                                                jsonSchemaStr.length(), 
+                                                jsonSchemaStr.length() > 500 ? jsonSchemaStr.substring(0, 500) + "..." : jsonSchemaStr);
+                                    }
+                                    validatedJsonMono = jsonSchemaValidator.validate(dataJsonNode, schemaDefinition);
                                 }
                                 
-                                // Validate data against JSON Schema
-                                return jsonSchemaValidator.validate(dataJsonNode, schemaDefinition)
+                                return validatedJsonMono
                                         .flatMap(validatedJson -> {
                                             // Construct topic name: {prefix}.{domain}.{eventName}
                                             String topicName = "%s.%s.%s".formatted(
@@ -329,8 +355,14 @@ public class EventController implements DefaultApi {
                                                     throwable.getClass().getName(), errorMessage, rootCause.getClass().getName(), throwable);
                                             
                                             // Log the data and schema that failed validation
-                                            log.error("Failed validation details - Data: {}, Schema length: {}", 
-                                                    dataJsonNode.toString(), jsonSchemaStr.length());
+                                            String schemaStr = schemaDefinition.jsonSchema();
+                                            if (schemaStr != null) {
+                                                log.error("Failed validation details - Data: {}, Schema length: {}", 
+                                                        dataJsonNode.toString(), schemaStr.length());
+                                            } else {
+                                                log.error("Failed validation details - Data: {}, Schema: null", 
+                                                        dataJsonNode.toString());
+                                            }
                                             
                                             // Record processing failure (fire and forget)
                                             idempotencyLedgerService.recordEventStatus(
@@ -509,7 +541,18 @@ public class EventController implements DefaultApi {
     private Mono<String> handleJsonSchemaValidation(JsonNode jsonNode, SchemaDefinition schemaDefinition,
                                                      SchemaReference reference, String eventId,
                                                      String idempotencyKey, SchemaFormat format, String topicName) {
-        return jsonSchemaValidator.validate(jsonNode, schemaDefinition)
+        // Check if validation is enabled
+        boolean validationEnabled = properties.validation() != null && properties.validation().isEnabled();
+        Mono<JsonNode> validatedJsonMono;
+        
+        if (!validationEnabled) {
+            log.warn("Schema validation is DISABLED (webhooks.validation.enabled=false). Skipping validation for testing purposes.");
+            validatedJsonMono = Mono.just(jsonNode);
+        } else {
+            validatedJsonMono = jsonSchemaValidator.validate(jsonNode, schemaDefinition);
+        }
+        
+        return validatedJsonMono
                 .flatMap(validatedJson -> {
                     EventEnvelope envelope = new EventEnvelope(
                             eventId,
@@ -530,7 +573,18 @@ public class EventController implements DefaultApi {
                                                                SchemaReference reference, String eventId,
                                                                String idempotencyKey, SchemaFormat format,
                                                                String topicName, String schemaId) {
-        return jsonSchemaValidator.validate(jsonNode, schemaDefinition)
+        // Check if validation is enabled
+        boolean validationEnabled = properties.validation() != null && properties.validation().isEnabled();
+        Mono<JsonNode> validatedJsonMono;
+        
+        if (!validationEnabled) {
+            log.warn("Schema validation is DISABLED (webhooks.validation.enabled=false). Skipping validation for testing purposes.");
+            validatedJsonMono = Mono.just(jsonNode);
+        } else {
+            validatedJsonMono = jsonSchemaValidator.validate(jsonNode, schemaDefinition);
+        }
+        
+        return validatedJsonMono
                 .flatMap(validatedJson -> {
                     EventEnvelope envelope = new EventEnvelope(
                             eventId,
@@ -555,14 +609,26 @@ public class EventController implements DefaultApi {
                                                                SchemaReference reference, String eventId,
                                                                String idempotencyKey, SchemaFormat format,
                                                                String topicName, String schemaId, String avroSchemaString) {
-        // Parse Avro schema for type coercion
+        // Check if validation is enabled
+        boolean validationEnabled = properties.validation() != null && properties.validation().isEnabled();
+        
+        // Parse Avro schema for type coercion (needed even if validation is disabled for serialization)
         Schema avroSchema = new Schema.Parser().parse(avroSchemaString);
 
         // Coerce JSON types to match Avro schema
         JsonNode coercedJson = coerceJsonToAvroTypes(jsonNode, avroSchema);
 
-        // Convert to Avro and validate against Avro schema
-        return avroSchemaValidator.validate(coercedJson, schemaDefinition)
+        // Convert to Avro and validate against Avro schema (or skip validation if disabled)
+        Mono<GenericRecord> avroRecordMono;
+        if (!validationEnabled) {
+            log.warn("Schema validation is DISABLED (webhooks.validation.enabled=false). Skipping Avro validation for testing purposes.");
+            // Create a minimal GenericRecord without validation
+            avroRecordMono = convertJsonToAvroRecord(coercedJson, avroSchema);
+        } else {
+            avroRecordMono = avroSchemaValidator.validate(coercedJson, schemaDefinition);
+        }
+        
+        return avroRecordMono
                 .flatMap(avroRecord -> {
                     // Serialize validated Avro record to binary
                     return avroSerializer.serializeToAvro(avroRecord, avroSchema);
@@ -590,21 +656,37 @@ public class EventController implements DefaultApi {
     private Mono<String> handleAvroSchemaValidation(JsonNode jsonNode, SchemaDefinition schemaDefinition,
                                                      SchemaReference reference, String eventId,
                                                      String idempotencyKey, SchemaFormat format, String topicName) {
+        // Check if validation is enabled
+        boolean validationEnabled = properties.validation() != null && properties.validation().isEnabled();
+        
         String avroSchemaString = schemaDefinition.avroSchema();
 
-        // Validate Avro schema exists
-        if (avroSchemaString == null || avroSchemaString.isEmpty()) {
+        // Validate Avro schema exists (only if validation is enabled)
+        if (validationEnabled && (avroSchemaString == null || avroSchemaString.isEmpty())) {
             return Mono.error(new ResponseStatusException(BAD_REQUEST, "Avro schema definition not configured for this event"));
         }
 
-        // Parse Avro schema for type coercion
-        Schema avroSchema = new Schema.Parser().parse(avroSchemaString);
-
+        // Parse Avro schema for type coercion (needed even if validation is disabled for serialization)
+        if (avroSchemaString == null || avroSchemaString.isEmpty()) {
+            return Mono.error(new ResponseStatusException(BAD_REQUEST, "Avro schema is required for serialization even when validation is disabled"));
+        }
+        
+        // Parse schema once and make it final for use in lambda
+        final Schema avroSchema = new Schema.Parser().parse(avroSchemaString);
         // Coerce JSON types to match Avro schema (important for XML where all values are strings)
-        JsonNode coercedJson = coerceJsonToAvroTypes(jsonNode, avroSchema);
+        final JsonNode coercedJson = coerceJsonToAvroTypes(jsonNode, avroSchema);
 
-        // Convert to Avro and validate against Avro schema
-        return avroSchemaValidator.validate(coercedJson, schemaDefinition)
+        // Convert to Avro and validate against Avro schema (or skip validation if disabled)
+        Mono<GenericRecord> avroRecordMono;
+        if (!validationEnabled) {
+            log.warn("Schema validation is DISABLED (webhooks.validation.enabled=false). Skipping Avro validation for testing purposes.");
+            // Create a minimal GenericRecord without validation
+            avroRecordMono = convertJsonToAvroRecord(coercedJson, avroSchema);
+        } else {
+            avroRecordMono = avroSchemaValidator.validate(coercedJson, schemaDefinition);
+        }
+        
+        return avroRecordMono
                 .flatMap(avroRecord -> {
                     // Serialize validated Avro record to binary
                     return avroSerializer.serializeToAvro(avroRecord, avroSchema);

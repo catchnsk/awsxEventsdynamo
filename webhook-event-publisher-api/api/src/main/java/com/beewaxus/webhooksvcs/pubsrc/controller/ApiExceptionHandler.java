@@ -10,11 +10,13 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.bind.support.WebExchangeBindException;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
 import java.time.Instant;
+import java.util.stream.Collectors;
 
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
 
@@ -84,11 +86,50 @@ public class ApiExceptionHandler {
                 )));
     }
 
+    @ExceptionHandler(WebExchangeBindException.class)
+    public Mono<ResponseEntity<ErrorResponse>> handleWebExchangeBindException(WebExchangeBindException ex, ServerWebExchange exchange) {
+        String path = exchange.getRequest().getPath().value();
+        String message = ex.getBindingResult().getFieldErrors().stream()
+                .map(error -> error.getField() + ": " + error.getDefaultMessage())
+                .collect(Collectors.joining(", "));
+        
+        if (message.isEmpty()) {
+            message = ex.getMessage();
+        }
+        
+        log.error("Request validation failed: path={}, errors={}", path, message, ex);
+        
+        return Mono.just(ResponseEntity.status(BAD_REQUEST)
+                .body(new ErrorResponse(
+                        Instant.now(),
+                        BAD_REQUEST.value(),
+                        BAD_REQUEST.getReasonPhrase(),
+                        "Validation failed: " + message,
+                        path
+                )));
+    }
+
     @ExceptionHandler(Exception.class)
     public Mono<ResponseEntity<ErrorResponse>> handleGenericException(Exception ex, ServerWebExchange exchange) {
         String path = exchange.getRequest().getPath().value();
         String message = ex.getMessage();
         String exceptionType = ex.getClass().getName();
+        
+        // Check for common validation/deserialization errors
+        if (message != null) {
+            if (message.contains("Type mismatch") || message.contains("type mismatch")) {
+                log.error("Type mismatch error detected: type={}, message={}, path={}, cause={}", 
+                        exceptionType, message, path, ex.getCause() != null ? ex.getCause().getClass().getName() : "none", ex);
+                return Mono.just(ResponseEntity.status(BAD_REQUEST)
+                        .body(new ErrorResponse(
+                                Instant.now(),
+                                BAD_REQUEST.value(),
+                                BAD_REQUEST.getReasonPhrase(),
+                                "Request validation failed: " + (ex.getCause() != null ? ex.getCause().getMessage() : message),
+                                path
+                        )));
+            }
+        }
         
         log.error("Handling unhandled exception: type={}, message={}, path={}", exceptionType, message, path, ex);
         

@@ -1,15 +1,15 @@
 package com.beewaxus.webhooksvcs.pubsrc.controller;
 
+import com.beewaxus.webhooksvcs.api.CacheManagementApi;
+import com.beewaxus.webhooksvcs.api.model.CacheEvictResponse;
 import com.beewaxus.webhooksvcs.pubsrc.schema.SchemaService;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
 @RestController
-@RequestMapping("/cache")
-public class CacheController {
+public class CacheController implements CacheManagementApi {
 
     private final SchemaService schemaService;
 
@@ -17,11 +17,13 @@ public class CacheController {
         this.schemaService = schemaService;
     }
 
-    @PostMapping("/evict/all")
-    public Mono<ResponseEntity<CacheEvictResponse>> evictAllCaches() {
+    @Override
+    public Mono<ResponseEntity<CacheEvictResponse>> evictAllCaches(ServerWebExchange exchange) {
         return schemaService.evictAndReload()
-                .thenReturn(ResponseEntity.ok(new CacheEvictResponse("Cache eviction completed")));
+                .then(Mono.fromCallable(() -> {
+                    CacheEvictResponse response = new CacheEvictResponse();
+                    response.setStatus("Cache eviction completed");
+                    return ResponseEntity.ok(response);
+                }));
     }
-
-    public record CacheEvictResponse(String status) {}
 }

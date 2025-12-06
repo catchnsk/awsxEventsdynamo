@@ -541,7 +541,8 @@ class EventControllerTest {
                             Duration.ofMinutes(5),
                             Duration.ofMinutes(5),
                             100
-                    )
+                    ),
+                    new WebhooksProperties.ValidationProperties(true)
             );
         }
     }

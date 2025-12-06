@@ -10,7 +10,8 @@ import java.time.Duration;
 public record WebhooksProperties(
         DynamoProperties dynamodb,
         KafkaProperties kafka,
-        CacheProperties cache
+        CacheProperties cache,
+        ValidationProperties validation
 ) {
 
     public record DynamoProperties(
@@ -61,8 +62,16 @@ public record WebhooksProperties(
             return schemaDetailTtl != null ? schemaDetailTtl : Duration.ofMinutes(5);
         }
 
-        public int getMaximumEntries() {
+        public         int getMaximumEntries() {
             return maximumEntries != null ? maximumEntries : 1000;
+        }
+    }
+
+    public record ValidationProperties(
+            Boolean enabled
+    ) {
+        public boolean isEnabled() {
+            return enabled == null || Boolean.TRUE.equals(enabled);
         }
     }
 }

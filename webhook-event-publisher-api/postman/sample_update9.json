@@ -1,12 +1,12 @@
 {
     "TableName": "event_schema",
     "Item": {
-      "PK": { "S": "SCHEMA_0009" },
+      "PK": { "S": "SCHEMA_0019" },
       "SK": { "S": "v1.0" },
   
-      "EVENT_SCHEMA_ID": { "S": "SCHEMA_0009" },
-      "PRODUCER_DOMAIN": { "S": "apply" },
-      "EVENT_NAME": { "S": "cardactivate" },
+      "EVENT_SCHEMA_ID": { "S": "SCHEMA_0019" },
+      "PRODUCER_DOMAIN": { "S": "apply1" },
+      "EVENT_NAME": { "S": "cardactivate1" },
       "VERSION": { "S": "1.0" },
       "EVENT_SCHEMA_HEADER": { "S": "Standard event header with ID, domain, version, and timestamp" },
   

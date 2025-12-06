@@ -39,7 +39,8 @@ class CachingSchemaServiceTest {
                         Duration.ofMinutes(5),
                         Duration.ofMinutes(5),
                         100
-                )
+                ),
+                new WebhooksProperties.ValidationProperties(true)
         );
 
         cachingSchemaService = new CachingSchemaService(delegate, properties);
@@ -114,7 +115,8 @@ class CachingSchemaServiceTest {
                         Duration.ofMinutes(5),
                         Duration.ofMinutes(5),
                         100
-                )
+                ),
+                new WebhooksProperties.ValidationProperties(true)
         );
 
         CachingSchemaService disabledService = new CachingSchemaService(delegate, disabledProps);
