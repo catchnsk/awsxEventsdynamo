@@ -115,6 +115,15 @@ public class EventController implements DefaultApi {
                             .flatMap(payload -> schemaService.fetchSchema(reference)
                         .switchIfEmpty(Mono.error(new ResponseStatusException(NOT_FOUND, "Schema not found")))
                         .onErrorMap(DynamoDbException.class, e -> {
+                            // Record processing failure for DynamoDB errors (fire and forget)
+                            idempotencyLedgerService.recordEventStatus(
+                                    eventId,
+                                    IdempotencyLedgerService.EventStatus.EVENT_PROCESSING_FAILED,
+                                    null
+                            ).subscribe(
+                                    null,
+                                    error -> log.error("Failed to record processing failure in ledger", error)
+                            );
                             // Check if it's a table not found error
                             if (e.getMessage().contains("does not exist")) {
                                 return new ResponseStatusException(INTERNAL_SERVER_ERROR, "DynamoDB table not found: " + e.getMessage(), e);
@@ -143,10 +152,57 @@ public class EventController implements DefaultApi {
                                             return handleAvroSchemaValidation(jsonNode, schemaDefinition, reference,
                                                     eventId, idempotencyKeyValue, format, topicName);
                                         }
+                                    })
+                                    .flatMap(publishedEventId -> {
+                                        // Construct schema ID from reference (format: SCHEMA_{DOMAIN}_{EVENT}_{VERSION})
+                                        String schemaId = String.format("SCHEMA_%s_%s_%s",
+                                                reference.domain().toUpperCase(),
+                                                reference.eventName().toUpperCase(),
+                                                reference.version().toUpperCase().replace(".", "_"));
+                                        
+                                        // Record status in idempotency ledger
+                                        return idempotencyLedgerService.recordEventStatus(
+                                                publishedEventId,
+                                                IdempotencyLedgerService.EventStatus.EVENT_READY_FOR_DELIVERY,
+                                                schemaId
+                                        )
+                                        .thenReturn(publishedEventId);
+                                    })
+                                    .onErrorResume(KafkaPublishException.class, e -> {
+                                        // Record delivery failure in ledger (fire and forget)
+                                        idempotencyLedgerService.recordEventStatus(
+                                                eventId,
+                                                IdempotencyLedgerService.EventStatus.EVENT_DELIVERY_FAILED,
+                                                null
+                                        ).subscribe(
+                                                null,
+                                                error -> log.error("Failed to record delivery failure in ledger", error)
+                                        );
+                                        return Mono.error(new ResponseStatusException(SERVICE_UNAVAILABLE, 
+                                                "Kafka is unavailable: " + e.getMessage(), e));
+                                    })
+                                    .onErrorResume(throwable -> {
+                                        // Record processing failure (fire and forget) for validation errors
+                                        if (!(throwable instanceof KafkaPublishException)) {
+                                            idempotencyLedgerService.recordEventStatus(
+                                                    eventId,
+                                                    IdempotencyLedgerService.EventStatus.EVENT_PROCESSING_FAILED,
+                                                    null
+                                            ).subscribe(
+                                                    null,
+                                                    error -> log.error("Failed to record processing failure in ledger", error)
+                                            );
+                                        }
+                                        // Re-throw the error
+                                        if (throwable instanceof ResponseStatusException) {
+                                            return Mono.error(throwable);
+                                        }
+                                        return Mono.error(new ResponseStatusException(BAD_REQUEST, 
+                                                throwable.getMessage() != null ? throwable.getMessage() : "Processing failed", 
+                                                throwable));
                                     });
                         })
-                        .onErrorMap(KafkaPublishException.class, e ->
-                            new ResponseStatusException(SERVICE_UNAVAILABLE, "Kafka is unavailable: " + e.getMessage(), e)));
+                    );
                 })
                 .map(id -> {
                     AckResponse response = new AckResponse();
@@ -428,6 +484,15 @@ public class EventController implements DefaultApi {
                 .flatMap(payload -> schemaService.fetchSchemaBySchemaId(schemaId)
                         .switchIfEmpty(Mono.error(new ResponseStatusException(NOT_FOUND, "Schema not found for schemaId: " + schemaId)))
                         .onErrorMap(DynamoDbException.class, e -> {
+                            // Record processing failure for DynamoDB errors (fire and forget)
+                            idempotencyLedgerService.recordEventStatus(
+                                    eventId,
+                                    IdempotencyLedgerService.EventStatus.EVENT_PROCESSING_FAILED,
+                                    schemaId
+                            ).subscribe(
+                                    null,
+                                    error -> log.error("Failed to record processing failure in ledger", error)
+                            );
                             // Check if it's a table not found error
                             if (e.getMessage().contains("does not exist")) {
                                 return new ResponseStatusException(INTERNAL_SERVER_ERROR, "DynamoDB table not found: " + e.getMessage(), e);
@@ -483,13 +548,43 @@ public class EventController implements DefaultApi {
                                                     eventId, idempotencyKeyValue, format, schemaDetail.topicName(), schemaId, schemaDefinition.avroSchema());
                                         }
                                     })
-                                    .onErrorMap(KafkaPublishException.class, e -> 
-                                        new ResponseStatusException(SERVICE_UNAVAILABLE, "Kafka is unavailable: " + e.getMessage(), e))
-                                    .onErrorMap(throwable -> {
+                                    .flatMap(publishedEventId -> {
+                                        // Record status in idempotency ledger using the schemaId from path parameter
+                                        return idempotencyLedgerService.recordEventStatus(
+                                                publishedEventId,
+                                                IdempotencyLedgerService.EventStatus.EVENT_READY_FOR_DELIVERY,
+                                                schemaId
+                                        )
+                                        .thenReturn(publishedEventId);
+                                    })
+                                    .onErrorResume(KafkaPublishException.class, e -> {
+                                        // Record delivery failure in ledger (fire and forget)
+                                        idempotencyLedgerService.recordEventStatus(
+                                                eventId,
+                                                IdempotencyLedgerService.EventStatus.EVENT_DELIVERY_FAILED,
+                                                schemaId
+                                        ).subscribe(
+                                                null,
+                                                error -> log.error("Failed to record delivery failure in ledger", error)
+                                        );
+                                        return Mono.error(new ResponseStatusException(SERVICE_UNAVAILABLE, 
+                                                "Kafka is unavailable: " + e.getMessage(), e));
+                                    })
+                                    .onErrorResume(throwable -> {
                                         // Catch any other Kafka-related exceptions
                                         if (throwable.getCause() instanceof KafkaPublishException) {
                                             KafkaPublishException kafkaEx = (KafkaPublishException) throwable.getCause();
-                                            return new ResponseStatusException(SERVICE_UNAVAILABLE, "Kafka is unavailable: " + kafkaEx.getMessage(), kafkaEx);
+                                            // Record delivery failure in ledger (fire and forget)
+                                            idempotencyLedgerService.recordEventStatus(
+                                                    eventId,
+                                                    IdempotencyLedgerService.EventStatus.EVENT_DELIVERY_FAILED,
+                                                    schemaId
+                                            ).subscribe(
+                                                    null,
+                                                    error -> log.error("Failed to record delivery failure in ledger", error)
+                                            );
+                                            return Mono.error(new ResponseStatusException(SERVICE_UNAVAILABLE, 
+                                                    "Kafka is unavailable: " + kafkaEx.getMessage(), kafkaEx));
                                         }
                                         // Check for Kafka connection errors
                                         String errorMessage = throwable.getMessage();
@@ -497,11 +592,49 @@ public class EventController implements DefaultApi {
                                                                      errorMessage.contains("broker") || 
                                                                      errorMessage.contains("connection") ||
                                                                      errorMessage.contains("timeout"))) {
-                                            return new ResponseStatusException(SERVICE_UNAVAILABLE, "Kafka is unavailable: " + errorMessage, throwable);
+                                            // Record delivery failure in ledger (fire and forget)
+                                            idempotencyLedgerService.recordEventStatus(
+                                                    eventId,
+                                                    IdempotencyLedgerService.EventStatus.EVENT_DELIVERY_FAILED,
+                                                    schemaId
+                                            ).subscribe(
+                                                    null,
+                                                    error -> log.error("Failed to record delivery failure in ledger", error)
+                                            );
+                                            return Mono.error(new ResponseStatusException(SERVICE_UNAVAILABLE, 
+                                                    "Kafka is unavailable: " + errorMessage, throwable));
                                         }
+                                        // Record processing failure for non-Kafka errors (fire and forget)
+                                        idempotencyLedgerService.recordEventStatus(
+                                                eventId,
+                                                IdempotencyLedgerService.EventStatus.EVENT_PROCESSING_FAILED,
+                                                schemaId
+                                        ).subscribe(
+                                                null,
+                                                error -> log.error("Failed to record processing failure in ledger", error)
+                                        );
                                         // Re-throw if not Kafka-related
-                                        return throwable;
+                                        return Mono.error(throwable);
                                     });
+                        })
+                        .onErrorResume(throwable -> {
+                            // Record processing failure for schema validation errors (fire and forget)
+                            if (throwable instanceof ResponseStatusException) {
+                                ResponseStatusException rse = (ResponseStatusException) throwable;
+                                // Only record for non-404 errors (404 means schema not found, which is a different case)
+                                if (rse.getStatusCode().value() != NOT_FOUND.value()) {
+                                    idempotencyLedgerService.recordEventStatus(
+                                            eventId,
+                                            IdempotencyLedgerService.EventStatus.EVENT_PROCESSING_FAILED,
+                                            schemaId
+                                    ).subscribe(
+                                            null,
+                                            error -> log.error("Failed to record processing failure in ledger", error)
+                                    );
+                                }
+                                return Mono.error(throwable);
+                            }
+                            return Mono.error(throwable);
                         }))
                 .map(id -> {
                     AckResponse response = new AckResponse();
