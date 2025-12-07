@@ -1,0 +1,62 @@
+{
+  "info": {
+    "name": "POST /webhook/event/publisher - Generic Format",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Test request for publishing generic format events with domain, eventName, version"
+  },
+  "item": [
+    {
+      "name": "Publish Generic Event",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-Event-Id",
+            "value": "{{$randomUUID}}",
+            "description": "Optional: Event ID (generated if not provided)",
+            "disabled": true
+          },
+          {
+            "key": "Idempotency-Key",
+            "value": "idemp-key-{{$randomUUID}}",
+            "description": "Optional: Idempotency key for duplicate detection",
+            "disabled": true
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"domain\": \"payments\",\n  \"eventName\": \"transactionCreated\",\n  \"version\": \"1.0\",\n  \"data\": {\n    \"transactionId\": \"txn-999\",\n    \"customerId\": \"cust-001\",\n    \"amount\": 150.75,\n    \"currency\": \"USD\",\n    \"status\": \"SUCCESS\",\n    \"metadata\": {\n      \"source\": \"mobile-app\"\n    }\n  }\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/webhook/event/publisher",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "webhook",
+            "event",
+            "publisher"
+          ]
+        },
+        "description": "Publishes a generic format event with domain, eventName, and version in the body.\n\nValidates data against JSON Schema or Avro Schema and publishes to Kafka topic: wh.ingress.{domain}.{eventName}"
+      },
+      "response": []
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080",
+      "type": "string"
+    }
+  ]
+}

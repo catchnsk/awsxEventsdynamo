@@ -3,17 +3,20 @@ package com.beewaxus.webhooksvcs.pubsrc.schema;
 import com.beewaxus.webhooksvcs.pubsrc.config.WebhooksProperties;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.time.Duration;
-import java.util.Objects;
 
 @Service
 @Primary
 public class CachingSchemaService implements SchemaService {
+
+    private static final Logger log = LoggerFactory.getLogger(CachingSchemaService.class);
 
     private final SchemaService delegate;
     private final Cache<SchemaReference, SchemaDefinition> schemaCache;
@@ -55,16 +58,29 @@ public class CachingSchemaService implements SchemaService {
     @Override
     public Mono<SchemaDefinition> fetchSchema(SchemaReference reference) {
         if (!cacheEnabled) {
+            log.debug("Cache is disabled, fetching schema directly from DynamoDB for reference: {}", reference);
             return delegate.fetchSchema(reference);
         }
 
         SchemaDefinition cached = schemaCache.getIfPresent(reference);
         if (cached != null) {
+            log.debug("Cache HIT for schema reference: {} (domain={}, eventName={}, version={})", 
+                    reference, reference.domain(), reference.eventName(), reference.version());
             return Mono.just(cached);
         }
 
+        log.debug("Cache MISS for schema reference: {} (domain={}, eventName={}, version={}). Fetching from DynamoDB...", 
+                reference, reference.domain(), reference.eventName(), reference.version());
         return delegate.fetchSchema(reference)
-                .doOnNext(schemaDefinition -> schemaCache.put(reference, schemaDefinition));
+                .doOnNext(schemaDefinition -> {
+                    schemaCache.put(reference, schemaDefinition);
+                    log.debug("Cached schema for reference: {} (domain={}, eventName={}, version={})", 
+                            reference, reference.domain(), reference.eventName(), reference.version());
+                })
+                .doOnError(error -> {
+                    log.warn("Failed to fetch schema from DynamoDB for reference: {} (domain={}, eventName={}, version={}). Error: {}", 
+                            reference, reference.domain(), reference.eventName(), reference.version(), error.getMessage());
+                });
     }
 
     @Override

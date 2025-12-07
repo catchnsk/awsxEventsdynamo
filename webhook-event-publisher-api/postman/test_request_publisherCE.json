@@ -1,0 +1,16 @@
+{
+  "id": "f701560e-a31b-4748-927f-2655caf785f9",
+  "type": "com.bee.us.card.activation",
+  "source": "payments",
+  "subject": "transactionCreated",
+  "specVersion": "1.0",
+  "time": "2025-12-06T14:00:00Z",
+  "data": {
+    "transactionId": "txn-999",
+    "customerId": "cust-001",
+    "amount": 150.75,
+    "currency": "USD",
+    "status": "SUCCESS"
+  }
+}
+

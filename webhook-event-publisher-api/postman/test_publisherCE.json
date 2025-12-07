@@ -1,0 +1,62 @@
+{
+  "info": {
+    "name": "POST /webhook/event/publisherCE - CloudEvents Format",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Test request for publishing CloudEvents format events"
+  },
+  "item": [
+    {
+      "name": "Publish CloudEvent",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-Event-Id",
+            "value": "f701560e-a31b-4748-927f-2655caf785f9",
+            "description": "Optional: Override event ID from payload",
+            "disabled": true
+          },
+          {
+            "key": "Idempotency-Key",
+            "value": "idemp-key-{{$randomUUID}}",
+            "description": "Optional: Idempotency key for duplicate detection",
+            "disabled": true
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"id\": \"f701560e-a31b-4748-927f-2655caf785f9\",\n  \"type\": \"com.bee.us.card.activation\",\n  \"source\": \"payments\",\n  \"subject\": \"transactionCreated\",\n  \"specVersion\": \"1.0\",\n  \"time\": \"2025-12-06T14:00:00Z\",\n  \"data\": {\n    \"transactionId\": \"txn-999\",\n    \"customerId\": \"cust-001\",\n    \"amount\": 150.75,\n    \"currency\": \"USD\",\n    \"status\": \"SUCCESS\"\n  }\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/webhook/event/publisherCE",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "webhook",
+            "event",
+            "publisherCE"
+          ]
+        },
+        "description": "Publishes a CloudEvents format event. Maps:\n- source → PRODUCER_DOMAIN\n- subject → EVENT_NAME\n- specVersion → VERSION\n\nValidates data against JSON Schema and publishes to Kafka topic: wh.ingress.{domain}.{eventName}"
+      },
+      "response": []
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080",
+      "type": "string"
+    }
+  ]
+}

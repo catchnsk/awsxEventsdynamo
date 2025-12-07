@@ -160,13 +160,18 @@ public class EventController implements DefaultApi {
                                                 reference.eventName().toUpperCase(),
                                                 reference.version().toUpperCase().replace(".", "_"));
                                         
-                                        // Record status in idempotency ledger
-                                        return idempotencyLedgerService.recordEventStatus(
+                                        // Record status in idempotency ledger (non-blocking - don't fail request if ledger write fails)
+                                        idempotencyLedgerService.recordEventStatus(
                                                 publishedEventId,
                                                 IdempotencyLedgerService.EventStatus.EVENT_READY_FOR_DELIVERY,
                                                 schemaId
                                         )
-                                        .thenReturn(publishedEventId);
+                                        .subscribe(
+                                                null,
+                                                error -> log.warn("Failed to record event status in idempotency ledger for eventId: {}. Error: {}", 
+                                                        publishedEventId, error.getMessage())
+                                        );
+                                        return Mono.just(publishedEventId);
                                     })
                                     .onErrorResume(KafkaPublishException.class, e -> {
                                         // Record delivery failure in ledger (fire and forget)
@@ -366,13 +371,18 @@ public class EventController implements DefaultApi {
                                                                 reference.eventName().toUpperCase(),
                                                                 reference.version().toUpperCase().replace(".", "_"));
                                                         
-                                                        // Record status in idempotency ledger
-                                                        return idempotencyLedgerService.recordEventStatus(
+                                                        // Record status in idempotency ledger (non-blocking - don't fail request if ledger write fails)
+                                                        idempotencyLedgerService.recordEventStatus(
                                                                 publishedEventId,
                                                                 IdempotencyLedgerService.EventStatus.EVENT_READY_FOR_DELIVERY,
                                                                 schemaId
                                                         )
-                                                        .thenReturn(publishedEventId);
+                                                        .subscribe(
+                                                                null,
+                                                                error -> log.warn("Failed to record event status in idempotency ledger for eventId: {}. Error: {}", 
+                                                                        publishedEventId, error.getMessage())
+                                                        );
+                                                        return Mono.just(publishedEventId);
                                                     })
                                                     .onErrorResume(KafkaPublishException.class, e -> {
                                                         // Record failure in ledger (fire and forget)
@@ -549,13 +559,18 @@ public class EventController implements DefaultApi {
                                         }
                                     })
                                     .flatMap(publishedEventId -> {
-                                        // Record status in idempotency ledger using the schemaId from path parameter
-                                        return idempotencyLedgerService.recordEventStatus(
+                                        // Record status in idempotency ledger (non-blocking - don't fail request if ledger write fails)
+                                        idempotencyLedgerService.recordEventStatus(
                                                 publishedEventId,
                                                 IdempotencyLedgerService.EventStatus.EVENT_READY_FOR_DELIVERY,
                                                 schemaId
                                         )
-                                        .thenReturn(publishedEventId);
+                                        .subscribe(
+                                                null,
+                                                error -> log.warn("Failed to record event status in idempotency ledger for eventId: {}. Error: {}", 
+                                                        publishedEventId, error.getMessage())
+                                        );
+                                        return Mono.just(publishedEventId);
                                     })
                                     .onErrorResume(KafkaPublishException.class, e -> {
                                         // Record delivery failure in ledger (fire and forget)
