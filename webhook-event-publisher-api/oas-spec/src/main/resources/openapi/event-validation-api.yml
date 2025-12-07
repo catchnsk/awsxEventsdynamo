@@ -327,26 +327,20 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-  /webhook/schema/{domain}/{event}/{version}:
-    get:
+  /webhook/schema/:
+    post:
       summary: Retrieve schema metadata for a specific event version
+      description: >-
+        Retrieves schema metadata by providing domain, event, and version in the request body.
+        The schema is looked up from DynamoDB (or cache if available) and returned.
       operationId: fetchSchema
-      parameters:
-        - name: domain
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: event
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: version
-          in: path
-          required: true
-          schema:
-            type: string
+      requestBody:
+        required: true
+        description: Schema lookup request with domain, event, and version
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SchemaLookupRequest'
       responses:
         '200':
           description: Schema metadata located
@@ -354,8 +348,26 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SchemaMetadata'
+        '400':
+          description: Invalid request body or missing required fields
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '404':
           description: Schema not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: DynamoDB table not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: DynamoDB service unavailable
           content:
             application/json:
               schema:
@@ -606,3 +618,23 @@ components:
           type: string
           description: Status message indicating cache eviction completion
           example: Cache eviction completed
+    SchemaLookupRequest:
+      type: object
+      description: Request body for schema lookup by domain, event, and version
+      required:
+        - domain
+        - event
+        - version
+      properties:
+        domain:
+          type: string
+          description: Producer domain name (maps to PRODUCER_DOMAIN in DynamoDB)
+          example: payments
+        event:
+          type: string
+          description: Event name (maps to EVENT_NAME in DynamoDB)
+          example: transactionCreated
+        version:
+          type: string
+          description: Schema version (maps to VERSION in DynamoDB)
+          example: "1.0"

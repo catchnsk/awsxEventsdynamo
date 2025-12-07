@@ -1007,16 +1007,34 @@ public class EventController implements DefaultApi {
     }
 
     @Override
-    public Mono<ResponseEntity<SchemaMetadata>> fetchSchema(String domain, String event, String version, ServerWebExchange exchange) {
-        return schemaService.fetchSchema(new SchemaReference(domain, event, version))
-                .map(this::convertToSchemaMetadata)
-                .map(ResponseEntity::ok)
-                .switchIfEmpty(Mono.error(new ResponseStatusException(NOT_FOUND, "Schema not found")))
-                .onErrorMap(DynamoDbException.class, e -> {
-                    if (e.getMessage().contains("does not exist")) {
-                        return new ResponseStatusException(INTERNAL_SERVER_ERROR, "DynamoDB table not found: " + e.getMessage(), e);
+    public Mono<ResponseEntity<SchemaMetadata>> fetchSchema(Mono<com.beewaxus.webhooksvcs.api.model.SchemaLookupRequest> schemaLookupRequest, ServerWebExchange exchange) {
+        return schemaLookupRequest
+                .switchIfEmpty(Mono.error(new ResponseStatusException(BAD_REQUEST, "Request body is required")))
+                .flatMap(request -> {
+                    String domain = request.getDomain();
+                    String event = request.getEvent();
+                    String version = request.getVersion();
+                    
+                    if (domain == null || domain.isEmpty()) {
+                        return Mono.error(new ResponseStatusException(BAD_REQUEST, "domain field is required"));
                     }
-                    return new ResponseStatusException(SERVICE_UNAVAILABLE, "DynamoDB service unavailable: " + e.getMessage(), e);
+                    if (event == null || event.isEmpty()) {
+                        return Mono.error(new ResponseStatusException(BAD_REQUEST, "event field is required"));
+                    }
+                    if (version == null || version.isEmpty()) {
+                        return Mono.error(new ResponseStatusException(BAD_REQUEST, "version field is required"));
+                    }
+                    
+                    return schemaService.fetchSchema(new SchemaReference(domain, event, version))
+                            .map(this::convertToSchemaMetadata)
+                            .map(ResponseEntity::ok)
+                            .switchIfEmpty(Mono.error(new ResponseStatusException(NOT_FOUND, "Schema not found")))
+                            .onErrorMap(DynamoDbException.class, e -> {
+                                if (e.getMessage().contains("does not exist")) {
+                                    return new ResponseStatusException(INTERNAL_SERVER_ERROR, "DynamoDB table not found: " + e.getMessage(), e);
+                                }
+                                return new ResponseStatusException(SERVICE_UNAVAILABLE, "DynamoDB service unavailable: " + e.getMessage(), e);
+                            });
                 });
     }
 

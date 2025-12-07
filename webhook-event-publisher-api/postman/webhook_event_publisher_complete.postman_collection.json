@@ -194,24 +194,36 @@
           "response": []
         },
         {
-          "name": "GET /webhook/schema/{domain}/{event}/{version}",
+          "name": "POST /webhook/schema/ - Get Schema",
           "request": {
-            "method": "GET",
-            "header": [],
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"domain\": \"payments\",\n  \"event\": \"transactionCreated\",\n  \"version\": \"1.0\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
             "url": {
-              "raw": "{{baseUrl}}/webhook/schema/payments/transactionCreated/1.0",
+              "raw": "{{baseUrl}}/webhook/schema/",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "webhook",
                 "schema",
-                "payments",
-                "transactionCreated",
-                "1.0"
+                ""
               ]
             },
-            "description": "Retrieves schema metadata for a specific event version."
+            "description": "Retrieves schema metadata for a specific event version by providing domain, event, and version in the request body.\n\n**Request Body:**\n- `domain` (required): Producer domain name\n- `event` (required): Event name\n- `version` (required): Schema version\n\n**Note:** Field names are case-sensitive. Use lowercase: `domain`, `event`, `version`"
           },
           "response": []
         }
