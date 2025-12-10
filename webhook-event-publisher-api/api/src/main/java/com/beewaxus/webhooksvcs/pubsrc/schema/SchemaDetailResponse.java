@@ -21,4 +21,3 @@ public record SchemaDetailResponse(
         Instant updateTs,
         String updateUser
 ) {}
-

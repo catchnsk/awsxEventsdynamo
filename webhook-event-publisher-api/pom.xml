@@ -19,12 +19,32 @@
     <description>Parent project that aggregates the Event Validation API service and OpenAPI specification modules</description>
 
     <modules>
-        <module>oas-spec</module>
-        <module>api-models</module>
+        <module>oasgen</module>
         <module>api</module>
     </modules>
 
     <properties>
+        <springfox-version>3.0.0</springfox-version>
+        <tomcat.version>10.1.10</tomcat.version>
         <java.version>21</java.version>
+        <openapi-generator-maven-plugin>4.3.1</openapi-generator-maven-plugin>
     </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>io.springfox</groupId>
+            <artifactId>springfox-swagger2</artifactId>
+            <version>3.0.0</version>
+        </dependency>
+        <dependency>
+            <groupId>io.springfox</groupId>
+            <artifactId>springfox-swagger-ui</artifactId>
+            <version>3.0.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.openapitools</groupId>
+            <artifactId>jackson-databind-nullable</artifactId>
+            <version>0.1.0</version>
+        </dependency>
+    </dependencies>
 </project>

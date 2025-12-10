@@ -1,0 +1,118 @@
+# Reusable Parameters
+# Common parameters used across multiple endpoints
+
+schemaIdPath:
+  name: schemaId
+  in: path
+  required: true
+  schema:
+    type: string
+    pattern: '^SCHEMA_[A-Za-z0-9_]{1,100}$'
+    minLength: 7
+    maxLength: 107
+  description: The EVENT_SCHEMA_ID value to search for (e.g., SCHEMA_0001, SCHEMA_TRANSACTION_CREATED_V1)
+  example: SCHEMA_0001
+
+eventNamePath:
+  name: eventName
+  in: path
+  required: true
+  schema:
+    type: string
+    pattern: '^[a-z][a-z0-9]*(-[a-z0-9]+)*$'
+    minLength: 2
+    maxLength: 128
+  description: Logical event name
+  example: transactionCreated
+
+domainPath:
+  name: domain
+  in: path
+  required: true
+  schema:
+    type: string
+    pattern: '^[a-z][a-z0-9]*(-[a-z0-9]+)*$'
+    minLength: 2
+    maxLength: 64
+  description: Producer domain used for routing and topic derivation
+  example: payments
+
+versionPath:
+  name: version
+  in: path
+  required: true
+  schema:
+    type: string
+    pattern: '^v?\\d+(\\.\\d+){0,2}$'
+    minLength: 1
+    maxLength: 16
+  description: Event schema version (e.g., v1, v1.0, v1.0.0)
+  example: v1
+
+# Custom Headers (Event-specific)
+Content-Type:
+  name: Content-Type
+  in: header
+  required: false
+  schema:
+    type: string
+    enum:
+      - application/json
+      - application/xml
+      - application/avro
+  example: application/json
+
+X-Event-Id:
+  name: X-Event-Id
+  in: header
+  required: false
+  description: Optional event ID (generated if not provided)
+  schema:
+    type: string
+    format: uuid
+    pattern: '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$'
+    minLength: 36
+    maxLength: 36
+  example: 550e8400-e29b-41d4-a716-446655440006
+
+Idempotency-Key:
+  name: Idempotency-Key
+  in: header
+  required: false
+  description: Optional idempotency key for duplicate detection
+  schema:
+    type: string
+    pattern: '^[A-Za-z0-9_-]{1,255}$'
+    minLength: 1
+    maxLength: 255
+  example: idempotency-550e8400-e29b-41d4-a716-446655440000
+
+Correlation-ID:
+  $ref: '../common-libraries/components/headers.yaml#/Correlation-ID'
+
+X-B3-TraceId:
+  $ref: '../common-libraries/components/headers.yaml#/X-B3-TraceId'
+
+X-B3-SpanId:
+  $ref: '../common-libraries/components/headers.yaml#/X-B3-SpanId'
+
+X-B3-ParentSpanId:
+  $ref: '../common-libraries/components/headers.yaml#/X-B3-ParentSpanId'
+
+X-B3-Sampled:
+  $ref: '../common-libraries/components/headers.yaml#/X-B3-Sampled'
+
+X-Channel-Id:
+  $ref: '../common-libraries/components/headers.yaml#/X-Channel-Id'
+
+X-Partner-Id:
+  $ref: '../common-libraries/components/headers.yaml#/X-Partner-Id'
+
+X-User-Id:
+  $ref: '../common-libraries/components/headers.yaml#/X-User-Id'
+
+Authorization:
+  $ref: '../common-libraries/components/headers.yaml#/Authorization'
+
+
+

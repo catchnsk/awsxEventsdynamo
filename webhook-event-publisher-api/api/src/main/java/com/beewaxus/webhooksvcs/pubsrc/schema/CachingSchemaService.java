@@ -64,21 +64,21 @@ public class CachingSchemaService implements SchemaService {
 
         SchemaDefinition cached = schemaCache.getIfPresent(reference);
         if (cached != null) {
-            log.debug("Cache HIT for schema reference: {} (domain={}, eventName={}, version={})", 
+            log.debug("Cache HIT for schema reference: {} (domain={}, eventName={}, version={})",
                     reference, reference.domain(), reference.eventName(), reference.version());
             return Mono.just(cached);
         }
 
-        log.debug("Cache MISS for schema reference: {} (domain={}, eventName={}, version={}). Fetching from DynamoDB...", 
+        log.debug("Cache MISS for schema reference: {} (domain={}, eventName={}, version={}). Fetching from DynamoDB...",
                 reference, reference.domain(), reference.eventName(), reference.version());
         return delegate.fetchSchema(reference)
                 .doOnNext(schemaDefinition -> {
                     schemaCache.put(reference, schemaDefinition);
-                    log.debug("Cached schema for reference: {} (domain={}, eventName={}, version={})", 
+                    log.debug("Cached schema for reference: {} (domain={}, eventName={}, version={})",
                             reference, reference.domain(), reference.eventName(), reference.version());
                 })
                 .doOnError(error -> {
-                    log.warn("Failed to fetch schema from DynamoDB for reference: {} (domain={}, eventName={}, version={}). Error: {}", 
+                    log.warn("Failed to fetch schema from DynamoDB for reference: {} (domain={}, eventName={}, version={}). Error: {}",
                             reference, reference.domain(), reference.eventName(), reference.version(), error.getMessage());
                 });
     }

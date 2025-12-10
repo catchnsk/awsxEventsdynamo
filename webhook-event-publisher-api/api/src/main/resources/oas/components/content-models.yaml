@@ -1,0 +1,142 @@
+# Content-Specific Models
+# Models used specifically in request/response content definitions
+
+EventPublishRequestData:
+  type: object
+  additionalProperties: false
+  description: Event Publisher Body
+  required: [data]
+  properties:
+    data:
+      $ref: './models.yaml#/EventPublishPayload'
+
+EventPublisherResponseData:
+  type: object
+  additionalProperties: false
+  description: Event Response Body
+  required: [data]
+  properties:
+    data:
+      $ref: './models.yaml#/EventPublisherResponseDataPayload'
+
+EventPublishCERequestData:
+  type: object
+  additionalProperties: false
+  description: Event Publisher Body
+  required: [data]
+  properties:
+    data:
+      $ref: './models.yaml#/EventPublishCEPayload'
+
+EventPublisherCEResponseData:
+  type: object
+  additionalProperties: false
+  description: Event Response Body
+  required: [data]
+  properties:
+    data:
+      $ref: './models.yaml#/EventPublisherCEResponseDataPayload'
+
+EventPublisherRequestData:
+  type: object
+  additionalProperties: false
+  description: Event Response Body
+  required: [data]
+  properties:
+    data:
+      $ref: './models.yaml#/EventPublisherPayload'
+
+SchemaLookupRequestData:
+  type: object
+  additionalProperties: false
+  description: Schema lookup request wrapper
+  required: [data]
+  properties:
+    data:
+      $ref: './models.yaml#/EventSchemaLookupPayload'
+
+CacheEvictResponseData:
+  type: object
+  additionalProperties: false
+  description: Cache eviction response wrapper
+  required: [data]
+  properties:
+    data:
+      $ref: './models.yaml#/CacheEvictResponseDataPayload'
+
+EventSchemaResponseData:
+  type: object
+  additionalProperties: false
+  description: Event schema response wrapper
+  required: [data]
+  properties:
+    data:
+      $ref: './models.yaml#/EventSchemaResponseDataPayload'
+
+#EventPublishRequestData:
+#  type: object
+#  required:
+#    - domain
+#    - eventName
+#    - version
+#    - data
+#  properties:
+#    domain:
+#      type: string
+#      description: Producer domain used for routing and topic derivation
+#      example: payments
+#    eventName:
+#      type: string
+#      description: Logical event name (e.g., CustomerUpdated)
+#      example: transactionCreated
+#    version:
+#      type: string
+#      description: Event schema version (e.g., v1)
+#      example: v1
+#    data:
+#      type: object
+#      description: The actual event Payload to validate
+#      additionalProperties: true
+#
+#EventPublisherResponseData:
+#  $ref: './models.yaml#/AckResponse'
+#
+#EventPublishCERequestData:
+#  $ref: './models.yaml#/EventPublishPayload'
+#
+#EventPublisherCEResponseData:
+#  $ref: './models.yaml#/AckResponse'
+#
+#EventPublisherRequestData:
+#  type: object
+#  required:
+#    - domain
+#    - eventName
+#    - version
+#    - data
+#  properties:
+#    domain:
+#      type: string
+#      description: Producer domain used for routing and topic derivation
+#      example: payments
+#    eventName:
+#      type: string
+#      description: Logical event name (e.g., CustomerUpdated)
+#      example: transactionCreated
+#    version:
+#      type: string
+#      description: Event schema version (e.g., v1)
+#      example: v1
+#    data:
+#      type: object
+#      description: The actual event Payload to validate
+#      additionalProperties: true
+#
+#SchemaLookupRequestData:
+#  $ref: './models.yaml#/SchemaLookupRequest'
+#
+#CacheEvictResponseData:
+#  $ref: './models.yaml#/CacheEvictResponse'
+#
+#EventSchemaResponseData:
+#  $ref: './models.yaml#/SchemaMetadata'

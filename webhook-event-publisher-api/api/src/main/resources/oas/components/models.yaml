@@ -1,0 +1,347 @@
+#
+# Component Schemas
+# All reusable data models/schemas used across the API
+
+EventPublishPayload:
+  type: object
+  additionalProperties: false
+  description: Event Payload in CloudEvents format
+  required: [id, type, source, subject, specVersion, time, data]
+  properties:
+    id:
+      type: string
+      format: uuid
+      minLength: 36
+      maxLength: 36
+      description: Unique identifier for the event instance
+      pattern: '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$'
+    type:
+      type: string
+      description: Type of event (e.g., com.bee.us.card.activation)
+      pattern: '^[a-z]+(\\.[a-z0-9]+)+$'
+      minLength: 1
+      maxLength: 64
+    source:
+      type: string
+      description: Source domain/system that produced the event (maps to PRODUCER_DOMAIN in DynamoDB)
+      pattern: '^[a-z][a-z0-9]*(-[a-z0-9]+)*$'
+      minLength: 1
+      maxLength: 64
+    subject:
+      type: string
+      description: Event name/subject (maps to EVENT_NAME in DynamoDB)
+      pattern: '^[a-zA-Z][a-zA-Z0-9]{1,127}$'
+      minLength: 2
+      maxLength: 128
+    specVersion:
+      type: string
+      description: CloudEvents specification version (maps to VERSION in DynamoDB)
+      pattern: '^v?\\d+(\\.\\d+){0,2}$'
+      minLength: 1
+      maxLength: 16
+    time:
+      type: string
+      format: date-time
+      description: ISO 8601 timestamp when the event occurred
+      pattern: '^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?(?:Z|[+-]\\d{2}:\\d{2})$'
+    data:
+      type: object
+      description: Event Payload data (validated against JSON Schema from EVENT_SCHEMA_DEFINITION in DynamoDB)
+      additionalProperties: true
+
+EventPublisherResponseDataPayload:
+  type: object
+  additionalProperties: false
+  description: Event Publisher Response
+  required: [eventId]
+  properties:
+    eventId:
+      type: string
+      format: uuid
+      minLength: 36
+      maxLength: 36
+      description: Unique event identifier
+      pattern: '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$'
+
+EventPublishCEPayload:
+  allOf:
+    - $ref: '#/EventPublishPayload'
+
+EventPublisherPayload:
+  type: object
+  additionalProperties: false
+  description: Event Payload keyed by domain, eventName, and version
+  required: [domain, eventName, version, data]
+  properties:
+    domain:
+      type: string
+      pattern: '^[a-z][a-z0-9]*(-[a-z0-9]+)*$'
+      minLength: 1
+      maxLength: 64
+      description: Source domain/system that produced the event (maps to PRODUCER_DOMAIN in DynamoDB)
+    eventName:
+      type: string
+      pattern: '^[a-zA-Z][a-zA-Z0-9]{1,127}$'
+      minLength: 2
+      maxLength: 128
+      description: Event name/subject (maps to EVENT_NAME in DynamoDB)
+    version:
+      type: string
+      pattern: '^v?\\d+(\\.\\d+){0,2}$'
+      minLength: 1
+      maxLength: 16
+      description: Schema version
+    data:
+      type: object
+      description: Event Payload data (validated against JSON Schema from EVENT_SCHEMA_DEFINITION in DynamoDB)
+      additionalProperties: true
+
+EventSchemaLookupPayload:
+  type: object
+  description: Request body for schema lookup by domain, event, and version
+  required: [domain, event, version]
+  properties:
+    domain:
+      type: string
+      description: Producer domain name (maps to PRODUCER_DOMAIN in DynamoDB)
+    event:
+      type: string
+      description: Event name (maps to EVENT_NAME in DynamoDB)
+    version:
+      type: string
+      description: Schema version (maps to VERSION in DynamoDB)
+
+EventPublisherCEResponseDataPayload:
+  allOf:
+    - $ref: '#/EventPublisherResponseDataPayload'
+
+CacheEvictResponseDataPayload:
+  type: object
+  additionalProperties: false
+  description: Cache eviction response
+  required: [msgStatus]
+  properties:
+    msgStatus:
+      type: string
+      minLength: 1
+      maxLength: 64
+      description: Message status
+      example: Cache eviction completed
+
+EventSchemaResponseDataPayload:
+  type: object
+  additionalProperties: false
+  description: Basic schema metadata response
+  properties:
+    schemaId:
+      type: string
+    domain:
+      type: string
+    eventName:
+      type: string
+    version:
+      type: string
+    formatType:
+      type: string
+    eventSchemaDefinition:
+      type: string
+      description: JSON Schema definition stored in EVENT_SCHEMA_DEFINITION
+
+#EventPayload:
+#  type: object
+#  required:
+#    - eventId
+#    - occurredAt
+#    - data
+#  properties:
+#    eventId:
+#      type: string
+#      format: uuid
+#    occurredAt:
+#      type: string
+#      format: date-time
+#    correlationId:
+#      type: string
+#    schemaVersion:
+#      type: string
+#    data:
+#      type: object
+#      additionalProperties: true
+#
+#AckResponse:
+#  type: object
+#  required:
+#    - eventId
+#  properties:
+#    eventId:
+#      type: string
+#      format: uuid
+#
+#SchemaMetadata:
+#  type: object
+#  required:
+#    - schemaId
+#    - formatType
+#  properties:
+#    schemaId:
+#      type: string
+#      description: Unique schema identifier
+#    eventSchemaId:
+#      type: string
+#      description: The EVENT_SCHEMA_ID from DynamoDB (actual schema identifier stored in database)
+#      nullable: true
+#      example: SCHEMA_0001
+#    formatType:
+#      type: string
+#      enum: [JSON_SCHEMA, AVRO_SCHEMA]
+#      description: Indicates which schema format is used for validation and serialization
+#    status:
+#      type: string
+#      enum: [ACTIVE, INACTIVE]
+#    eventName:
+#      type: string
+#    producerDomain:
+#      type: string
+#    version:
+#      type: string
+#    jsonSchema:
+#      type: string
+#      description: JSON Schema definition (used when formatType is JSON_SCHEMA)
+#      nullable: true
+#    avroSchema:
+#      type: string
+#      description: Avro Schema definition (used when formatType is AVRO_SCHEMA)
+#      nullable: true
+#    eventSchemaDefinition:
+#      type: string
+#      description: Event schema definition (EVENT_SCHEMA_DEFINITION from DynamoDB). Contains JSON Schema if formatType is JSON_SCHEMA, or Avro Schema if formatType is AVRO_SCHEMA.
+#      nullable: true
+#    updatedAt:
+#      type: string
+#      format: date-time
+#      description: Timestamp when the schema was last updated
+#
+#ErrorResponse:
+#  type: object
+#  required:
+#    - code
+#    - message
+#  properties:
+#    code:
+#      type: string
+#      example: VALIDATION_FAILED
+#    message:
+#      type: string
+#    details:
+#      type: array
+#      items:
+#        type: string
+#
+#SchemaDetailResponse:
+#  type: object
+#  description: Complete schema metadata from DynamoDB including all attributes
+#  properties:
+#    eventSchemaId:
+#      type: string
+#      description: The EVENT_SCHEMA_ID identifier
+#      example: SCHEMA_0001
+#    producerDomain:
+#      type: string
+#      description: Producer domain name
+#      example: payments
+#    eventName:
+#      type: string
+#      description: Event name
+#      example: transactionCreated
+#    version:
+#      type: string
+#      description: Schema version
+#      example: "1.0"
+#    eventSchemaHeader:
+#      type: string
+#      description: Description of the event schema header
+#    eventSchemaDefinition:
+#      type: string
+#      description: JSON Schema definition (EVENT_SCHEMA_DEFINITION). Used for JSON Schema validation when present.
+#      nullable: true
+#    eventSchemaDefinitionAvro:
+#      type: string
+#      description: Avro Schema definition (EVENT_SCHEMA_DEFINITION_AVRO). Used for Avro validation when EVENT_SCHEMA_DEFINITION is not present.
+#      nullable: true
+#    formatType:
+#      type: string
+#      enum: [JSON_SCHEMA, AVRO_SCHEMA]
+#      description: >-
+#        Determined schema format type:
+#        JSON_SCHEMA - if eventSchemaDefinition is present (validates with JSON Schema, publishes as JSON)
+#        AVRO_SCHEMA - if only eventSchemaDefinitionAvro is present (validates with Avro, publishes as Avro binary)
+#    eventSample:
+#      type: string
+#      description: Sample event Payload in JSON format
+#    eventSchemaStatus:
+#      type: string
+#      enum: [ACTIVE, INACTIVE]
+#      description: Status of the schema
+#    hasSensitiveData:
+#      type: string
+#      enum: [YES, NO]
+#      description: Indicates if the event contains sensitive data
+#    producerSystemUsersId:
+#      type: string
+#      description: User ID who created the schema
+#    topicName:
+#      type: string
+#      description: Kafka topic name
+#      example: payments.transaction.created
+#    topicStatus:
+#      type: string
+#      enum: [ACTIVE, INACTIVE]
+#      description: Status of the Kafka topic
+#    insertTs:
+#      type: string
+#      format: date-time
+#      description: Timestamp when the schema was inserted
+#      nullable: true
+#    insertUser:
+#      type: string
+#      description: User who inserted the schema
+#    updateTs:
+#      type: string
+#      format: date-time
+#      description: Timestamp when the schema was last updated
+#      nullable: true
+#    updateUser:
+#      type: string
+#      description: User who last updated the schema
+#
+#CacheEvictResponse:
+#  type: object
+#  description: Response from cache eviction operation
+#  required:
+#    - status
+#  properties:
+#    status:
+#      type: string
+#      description: Status message indicating cache eviction completion
+#      example: Cache eviction completed
+#
+#SchemaLookupRequest:
+#  type: object
+#  description: Request body for schema lookup by domain, event, and version
+#  required:
+#    - domain
+#    - event
+#    - version
+#  properties:
+#    domain:
+#      type: string
+#      description: Producer domain name (maps to PRODUCER_DOMAIN in DynamoDB)
+#      example: payments
+#    event:
+#      type: string
+#      description: Event name (maps to EVENT_NAME in DynamoDB)
+#      example: transactionCreated
+#    version:
+#      type: string
+#      description: Schema version (maps to VERSION in DynamoDB)
+#      example: "1.0"

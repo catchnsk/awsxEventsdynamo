@@ -54,31 +54,31 @@ public class DynamoSchemaService implements SchemaService {
 
                         // If GetItem didn't return a result, try scanning with filter expression
                         if (item == null || item.isEmpty()) {
-                            log.debug("Querying schema by attributes: domain={}, event={}, version={}", 
+                            log.debug("Querying schema by attributes: domain={}, event={}, version={}",
                                     reference.domain(), reference.eventName(), reference.version());
-                            
+
                             Map<String, AttributeValue> expressionAttributeValues = new HashMap<>();
                             expressionAttributeValues.put(":domain", AttributeValue.builder().s(reference.domain()).build());
                             expressionAttributeValues.put(":eventName", AttributeValue.builder().s(reference.eventName()).build());
                             expressionAttributeValues.put(":version", AttributeValue.builder().s(reference.version()).build());
-                            
+
                             ScanRequest scanRequest = ScanRequest.builder()
                                     .tableName(properties.dynamodb().tableName())
                                     .filterExpression("PRODUCER_DOMAIN = :domain AND EVENT_NAME = :eventName AND VERSION = :version")
                                     .expressionAttributeValues(expressionAttributeValues)
                                     .build();
-                            
+
                             ScanResponse scanResponse = dynamoDbClient.scan(scanRequest);
-                            
+
                             if (scanResponse.items().isEmpty()) {
-                                log.debug("No schema found for domain={}, event={}, version={}", 
+                                log.debug("No schema found for domain={}, event={}, version={}",
                                         reference.domain(), reference.eventName(), reference.version());
                                 return null;
                             }
-                            
+
                             // Use the first matching item
                             item = scanResponse.items().get(0);
-                            log.debug("Found schema via scan for domain={}, event={}, version={}", 
+                            log.debug("Found schema via scan for domain={}, event={}, version={}",
                                     reference.domain(), reference.eventName(), reference.version());
                         }
 
@@ -133,20 +133,20 @@ public class DynamoSchemaService implements SchemaService {
                     try {
                         String tableName = properties.dynamodb().tableName();
                         log.debug("Scanning DynamoDB table: {}", tableName);
-                        
+
                         ScanResponse scanResponse = dynamoDbClient.scan(ScanRequest.builder()
                                 .tableName(tableName)
                                 .build());
-                        
-                        log.debug("Scan completed. Found {} items in table {}", 
+
+                        log.debug("Scan completed. Found {} items in table {}",
                                 scanResponse.items().size(), tableName);
                         return scanResponse;
                     } catch (ResourceNotFoundException e) {
-                        log.error("DynamoDB table '{}' not found. Error details: {}", 
+                        log.error("DynamoDB table '{}' not found. Error details: {}",
                                 properties.dynamodb().tableName(), e.getMessage(), e);
                         throw new DynamoDbException("DynamoDB table '" + properties.dynamodb().tableName() + "' does not exist", e);
                     } catch (SdkException e) {
-                        log.error("DynamoDB error while fetching all schemas from table '{}': {}", 
+                        log.error("DynamoDB error while fetching all schemas from table '{}': {}",
                                 properties.dynamodb().tableName(), e.getMessage(), e);
                         throw new DynamoDbException("DynamoDB service unavailable: " + e.getMessage(), e);
                     }
@@ -170,19 +170,19 @@ public class DynamoSchemaService implements SchemaService {
                     try {
                         Map<String, AttributeValue> expressionAttributeValues = new HashMap<>();
                         expressionAttributeValues.put(":schemaId", AttributeValue.builder().s(schemaId).build());
-                        
+
                         ScanRequest scanRequest = ScanRequest.builder()
                                 .tableName(properties.dynamodb().tableName())
                                 .filterExpression("EVENT_SCHEMA_ID = :schemaId")
                                 .expressionAttributeValues(expressionAttributeValues)
                                 .build();
-                        
+
                         ScanResponse scanResponse = dynamoDbClient.scan(scanRequest);
-                        
+
                         if (scanResponse.items().isEmpty()) {
                             return null;
                         }
-                        
+
                         // Return the first matching item (assuming EVENT_SCHEMA_ID is unique)
                         return scanResponse.items().get(0);
                     } catch (ResourceNotFoundException e) {
@@ -215,9 +215,9 @@ public class DynamoSchemaService implements SchemaService {
         try {
             String pk = stringValue(item, "PK", "");
             String sk = stringValue(item, "SK", "");
-            
+
             SchemaReference reference = null;
-            
+
             // Try to parse from PK/SK format first: "SCHEMA#{domain}#{eventName}" / "v{version}"
             if (pk.startsWith("SCHEMA#") && sk.startsWith("v")) {
                 reference = parseSchemaReferenceFromPkSk(pk, sk);
@@ -226,7 +226,7 @@ public class DynamoSchemaService implements SchemaService {
                 String domain = stringValue(item, "PRODUCER_DOMAIN", null);
                 String eventName = stringValue(item, "EVENT_NAME", null);
                 String version = stringValue(item, "VERSION", null);
-                
+
                 if (domain != null && eventName != null && version != null) {
                     reference = new SchemaReference(domain, eventName, version);
                 } else {
@@ -234,7 +234,7 @@ public class DynamoSchemaService implements SchemaService {
                     return null;
                 }
             }
-            
+
             // Read both schema definitions
             String jsonSchema = stringValue(item, "EVENT_SCHEMA_DEFINITION", null);
             String avroSchema = stringValue(item, "EVENT_SCHEMA_DEFINITION_AVRO", null);
@@ -290,20 +290,20 @@ public class DynamoSchemaService implements SchemaService {
         if (!pk.startsWith("SCHEMA#")) {
             throw new IllegalArgumentException("Invalid PK format: " + pk);
         }
-        
+
         String[] pkParts = pk.substring(7).split("#", 2); // Remove "SCHEMA#" prefix
         if (pkParts.length != 2) {
             throw new IllegalArgumentException("Invalid PK format: " + pk);
         }
-        
+
         String domain = pkParts[0];
         String eventName = pkParts[1];
-        
+
         if (!sk.startsWith("v")) {
             throw new IllegalArgumentException("Invalid SK format: " + sk);
         }
         String version = sk.substring(1); // Remove "v" prefix
-        
+
         return new SchemaReference(domain, eventName, version);
     }
 
@@ -311,10 +311,10 @@ public class DynamoSchemaService implements SchemaService {
         try {
             String insertTsStr = stringValue(item, "INSERT_TS", null);
             String updateTsStr = stringValue(item, "UPDATE_TS", null);
-            
+
             Instant insertTs = null;
             Instant updateTs = null;
-            
+
             // Parse timestamps with error handling
             if (insertTsStr != null && !insertTsStr.isEmpty()) {
                 try {
@@ -323,7 +323,7 @@ public class DynamoSchemaService implements SchemaService {
                     log.warn("Failed to parse INSERT_TS: {}", insertTsStr, e);
                 }
             }
-            
+
             if (updateTsStr != null && !updateTsStr.isEmpty()) {
                 try {
                     updateTs = Instant.parse(updateTsStr);
@@ -331,7 +331,7 @@ public class DynamoSchemaService implements SchemaService {
                     log.warn("Failed to parse UPDATE_TS: {}", updateTsStr, e);
                 }
             }
-            
+
             return new SchemaDetailResponse(
                     stringValue(item, "EVENT_SCHEMA_ID", null),
                     stringValue(item, "PRODUCER_DOMAIN", null),

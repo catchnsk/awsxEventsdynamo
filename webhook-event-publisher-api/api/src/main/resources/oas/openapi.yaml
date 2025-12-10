@@ -1,0 +1,309 @@
+openapi: 3.0.2
+info:
+  title: Event Validation API
+  version: 0.1.0
+  description: |
+    API for validating webhook events, retrieving schema metadata, and publishing to MSK ingress topics.
+
+    ## Schema Validation Support
+
+    This API supports two schema validation formats:
+
+    **JSON Schema Validation** (EVENT_SCHEMA_DEFINITION):
+    - When EVENT_SCHEMA_DEFINITION is present in DynamoDB, the system uses JSON Schema for validation
+    - Validated events are published to Kafka as JSON strings
+    - Suitable for flexible, human-readable event data
+
+    **Avro Schema Validation** (EVENT_SCHEMA_DEFINITION_AVRO):
+    - When only EVENT_SCHEMA_DEFINITION_AVRO is present, the system uses Avro Schema for validation
+    - Validated events are serialized to Avro binary format and published to Kafka
+    - Suitable for high-performance, compact event data
+
+    The system automatically determines which validation method to use based on which schema definition is present in DynamoDB.
+    If both are present, JSON Schema takes precedence.
+
+servers:
+  - url: https://api.mycorp.example
+    description: Production
+  - url: https://api.sandbox.mycorp.example
+    description: Sandbox
+
+tags:
+  #
+  - name: Webhook-event-publisher-api
+    description: Webhook Event Publisher APIs
+
+components:
+  schemas:
+    EventPublisherPayload:
+      $ref: './components/models.yaml#/EventPublishPayload'
+    EventPublisherResponse:
+      $ref: './components/models.yaml#/EventPublisherResponseDataPayload'
+
+  # Only API specific parameters needs to be added in the section below
+  parameters:
+    Correlation-ID:
+      $ref: './common-libraries/components/headers.yaml#/Correlation-ID'
+    X-B3-TraceId:
+      $ref: './common-libraries/components/headers.yaml#/X-B3-TraceId'
+    X-B3-SpanId:
+      $ref: './common-libraries/components/headers.yaml#/X-B3-SpanId'
+    X-B3-ParentSpanId:
+      $ref: './common-libraries/components/headers.yaml#/X-B3-ParentSpanId'
+    X-B3-Sampled:
+      $ref: './common-libraries/components/headers.yaml#/X-B3-Sampled'
+    X-Channel-Id:
+      $ref: './common-libraries/components/headers.yaml#/X-Channel-Id'
+    X-Partner-Id:
+      $ref: './common-libraries/components/headers.yaml#/X-Partner-Id'
+    X-User-Id:
+      $ref: './common-libraries/components/headers.yaml#/X-User-Id'
+
+  # Declare all the response headers in the headers section
+  headers:
+    Cache-Control:
+      $ref: './common-libraries/components/headers.yaml#/Cache-Control'
+
+  # Declare all the common responses in the responses section
+  responses:
+    InternalServerError:
+      $ref: './common-libraries/components/responses.yaml#/InternalServerError'
+    Forbidden:
+      $ref: './common-libraries/components/responses.yaml#/Forbidden'
+    NotFound:
+      $ref: './common-libraries/components/responses.yaml#/NotFound'
+    BadRequest:
+      $ref: './common-libraries/components/responses.yaml#/BadRequest'
+    Unauthorized:
+      $ref: './common-libraries/components/responses.yaml#/Unauthorized'
+    ServiceUnavailable:
+      $ref: './common-libraries/components/responses.yaml#/ServiceUnavailable'
+
+
+
+#
+#TODO: List all the acceptable security schemes. If you list InternalBasicAuth #then you will need an ORAC from CSO.
+# -----
+
+#TODD: List all the models defined in in/components/content-models.yam2 and #/components/models. yam here. This helps Swagger UI display and connect the
+# models property in the UT.
+# schemas:
+paths:
+  /webhook/events/publish:
+    summary: Validate and publish an event payload
+    description: >-
+        Validates an inbound payload against the configured schema (JSON Schema or Avro Schema) and publishes it to the matching MSK ingress topic.
+        The domain, eventName, and version are provided in the request body.
+        If EVENT_SCHEMA_DEFINITION (JSON Schema) exists, validates with JSON Schema and publishes as JSON.
+        If only EVENT_SCHEMA_DEFINITION_AVRO exists, validates with Avro Schema and publishes as Avro binary.
+    parameters:
+      - $ref: './common-libraries/components/headers.yaml#/Correlation-ID'
+      - $ref: './common-libraries/components/headers.yaml#/X-B3-TraceId'
+      - $ref: './common-libraries/components/headers.yaml#/X-B3-SpanId'
+      - $ref: './common-libraries/components/headers.yaml#/X-Channel-Id'
+      - $ref: './common-libraries/components/headers.yaml#/X-User-Id'
+      - $ref: './components/parameters.yaml#/Content-Type'
+      - $ref: './components/parameters.yaml#/X-Event-Id'
+      - $ref: './components/parameters.yaml#/Idempotency-Key'
+    post:
+      summary: Validate and publish an event payload
+      description: >-
+        Validates an inbound payload against the configured schema (JSON Schema or Avro Schema) and publishes it to the matching MSK ingress topic.
+        The domain, eventName, and version are provided in the request body.
+        If EVENT_SCHEMA_DEFINITION (JSON Schema) exists, validates with JSON Schema and publishes as JSON.
+        If only EVENT_SCHEMA_DEFINITION_AVRO exists, validates with Avro Schema and publishes as Avro binary.
+
+      operationId: publishEvent
+      tags:
+        - webhook-publish-event-api
+      requestBody:
+        $ref: './components/requests.yaml#/EventPublishRequest'
+      responses:
+        '202':
+          $ref: './components/responses.yaml#/EventPublisherResponse'
+        '500':
+          $ref: './common-libraries/components/responses.yaml#/InternalServerError'
+        '404':
+          $ref: './common-libraries/components/responses.yaml#/NotFound'
+        '400':
+          $ref: './common-libraries/components/responses.yaml#/BadRequest'
+        '503':
+          $ref: './common-libraries/components/responses.yaml#/ServiceUnavailable'
+
+  /webhook/schema/evict/all:
+    summary: Validate and publish an event payload
+    description: >-
+      Validates an inbound payload against the configured schema (JSON Schema or Avro Schema) and publishes it to the matching MSK ingress topic.
+      The domain, eventName, and version are provided in the request body.
+      If EVENT_SCHEMA_DEFINITION (JSON Schema) exists, validates with JSON Schema and publishes as JSON.
+      If only EVENT_SCHEMA_DEFINITION_AVRO exists, validates with Avro Schema and publishes as Avro binary.
+    parameters:
+      - $ref: './common-libraries/components/headers.yaml#/Correlation-ID'
+      - $ref: './common-libraries/components/headers.yaml#/X-B3-TraceId'
+      - $ref: './common-libraries/components/headers.yaml#/X-B3-SpanId'
+      - $ref: './common-libraries/components/headers.yaml#/X-Channel-Id'
+      - $ref: './common-libraries/components/headers.yaml#/X-User-Id'
+      - $ref: './components/parameters.yaml#/Content-Type'
+    post:
+      summary: Evict and reload all schema caches
+      description: >-
+        Clears all cached schema definitions and schema details, then reloads them from DynamoDB.
+        This endpoint is useful after updating schemas in DynamoB to ensure the application
+        picks up the latest changes immediately without waiting for cache TTL expiration.
+        If caching is disabled, this operation has no effect.
+      operationId: evictAllCaches
+      tags:
+        - Cache Management
+      responses:
+        '202':
+          $ref: './components/responses.yaml#/CacheEvictResponse'
+        '500':
+          $ref: './common-libraries/components/responses.yaml#/InternalServerError'
+        '404':
+          $ref: './common-libraries/components/responses.yaml#/NotFound'
+        '400':
+          $ref: './common-libraries/components/responses.yaml#/BadRequest'
+        '503':
+          $ref: './common-libraries/components/responses.yaml#/ServiceUnavailable'
+
+#event
+#
+  /webhook/event/publisherCE:
+    summary: Publish CloudEvents format event
+    description: >-
+      Validates and publishes a CloudEvents format event payload. The event must include mandatory fields: id (UUID), type, source, subject, specVersion, and time.
+      The data field contains the event payload which will be validated against the JSON Schema stored in DynamoDB EVENT_SCHEMA_DEFINITION column.
+      The schema is looked up based on source (domain), subject (eventName), and specVersion (version).
+      Validated events are published to the matching MSK ingress topic.
+    parameters:
+      - $ref: './common-libraries/components/headers.yaml#/Correlation-ID'
+      - $ref: './common-libraries/components/headers.yaml#/X-B3-TraceId'
+      - $ref: './common-libraries/components/headers.yaml#/X-B3-SpanId'
+      - $ref: './common-libraries/components/headers.yaml#/X-Channel-Id'
+      - $ref: './common-libraries/components/headers.yaml#/X-User-Id'
+      - $ref: './components/parameters.yaml#/Content-Type'
+      - $ref: './components/parameters.yaml#/X-Event-Id'
+      - $ref: './components/parameters.yaml#/Idempotency-Key'
+    post:
+      summary: Publish CloudEvents format event
+      description: >-
+        Validates and publishes a CloudEvents format event payload. The event must include mandatory fields: id (UUID), type, source, subject, specVersion, and time.
+        The data field contains the event payload which will be validated against the JSON Schema stored in DynamoDB EVENT_SCHEMA_DEFINITION column.
+        The schema is looked up based on source (domain), subject (eventName), and specVersion (version).
+        Validated events are published to the matching MSK ingress topic.
+      operationId: publishCloudEvent
+      tags:
+        - webhook-publish-event-api
+
+      requestBody:
+        $ref: './components/requests.yaml#/EventPublishCERequest'
+      responses:
+        '202':
+          $ref: './components/responses.yaml#/EventPublisherResponse'
+        '500':
+          $ref: './common-libraries/components/responses.yaml#/InternalServerError'
+        '404':
+          $ref: './common-libraries/components/responses.yaml#/NotFound'
+        '400':
+          $ref: './common-libraries/components/responses.yaml#/BadRequest'
+        '503':
+          $ref: './common-libraries/components/responses.yaml#/ServiceUnavailable'
+  /webhook/event/publisher:
+    summary: Validate and publish an event payload
+    description: >-
+      Validates an inbound payload against the configured schema (JSON Schema or Avro Schema) and publishes it to the matching MSK ingress topic.
+      The domain, eventName, and version are provided in the request body.
+      If EVENT_SCHEMA_DEFINITION (JSON Schema) exists, validates with JSON Schema and publishes as JSON.
+      If only EVENT_SCHEMA_DEFINITION_AVRO exists, validates with Avro Schema and publishes as Avro binary.
+    parameters:
+      - $ref: './common-libraries/components/headers.yaml#/Correlation-ID'
+      - $ref: './common-libraries/components/headers.yaml#/X-B3-TraceId'
+      - $ref: './common-libraries/components/headers.yaml#/X-B3-SpanId'
+      - $ref: './common-libraries/components/headers.yaml#/X-Channel-Id'
+      - $ref: './common-libraries/components/headers.yaml#/X-User-Id'
+      - $ref: './components/parameters.yaml#/Content-Type'
+      - $ref: './components/parameters.yaml#/X-Event-Id'
+      - $ref: './components/parameters.yaml#/Idempotency-Key'
+    post:
+      summary: Validate and publish an event payload
+      description: >-
+        Validates an inbound payload against the configured schema (JSON Schema or Avro Schema) and publishes it to the matching MSK ingress topic.
+        The domain, eventName, and version are provided in the request body.
+        If EVENT_SCHEMA_DEFINITION (JSON Schema) exists, validates with JSON Schema and publishes as JSON.
+        If only EVENT_SCHEMA_DEFINITION_AVRO exists, validates with Avro Schema and publishes as Avro binary.
+      operationId: publisherEvent
+      tags:
+        - webhook-publish-event-api
+      requestBody:
+        $ref: './components/requests.yaml#/EventPublisherRequest'
+      responses:
+        '202':
+          $ref: './components/responses.yaml#/EventPublisherResponse'
+        '500':
+          $ref: './common-libraries/components/responses.yaml#/InternalServerError'
+        '404':
+          $ref: './common-libraries/components/responses.yaml#/NotFound'
+        '400':
+          $ref: './common-libraries/components/responses.yaml#/BadRequest'
+        '503':
+          $ref: './common-libraries/components/responses.yaml#/ServiceUnavailable'
+
+  /webhook/schema/all:
+    summary: List all active schemas
+    description: >-
+      Retrieves all active schema definitions from the event_schema table.
+      Returns a list of schema metadata including domain, event name, version, and schema definitions.
+    parameters:
+      - $ref: './common-libraries/components/headers.yaml#/Correlation-ID'
+      - $ref: './common-libraries/components/headers.yaml#/X-B3-TraceId'
+      - $ref: './common-libraries/components/headers.yaml#/X-B3-SpanId'
+      - $ref: './common-libraries/components/headers.yaml#/X-Channel-Id'
+      - $ref: './common-libraries/components/headers.yaml#/X-User-Id'
+      - $ref: './components/parameters.yaml#/Content-Type'
+    get:
+      summary: List all active schemas
+      description: >-
+        Retrieves all active schema definitions from the event_schema table.
+        Returns a list of schema metadata including domain, event name, version, and schema definitions.
+      operationId: getAllSchemas
+      tags:
+        - webhook-schema-api
+      responses:
+        '200':
+          $ref: './components/responses.yaml#/EventSchemaResponse'
+        '500':
+          $ref: './common-libraries/components/responses.yaml#/InternalServerError'
+  /webhook/schema:
+    summary: Retrieve schema metadata for a specific event version
+    description: >-
+      Retrieves schema metadata by providing domain, event, and version in the request body.
+      The schema is looked up from DynamoDB (or cache if available) and returned.
+    parameters:
+      - $ref: './common-libraries/components/headers.yaml#/Correlation-ID'
+      - $ref: './common-libraries/components/headers.yaml#/X-B3-TraceId'
+      - $ref: './common-libraries/components/headers.yaml#/X-B3-SpanId'
+      - $ref: './common-libraries/components/headers.yaml#/X-Channel-Id'
+      - $ref: './common-libraries/components/headers.yaml#/X-User-Id'
+      - $ref: './components/parameters.yaml#/Content-Type'
+    post:
+      summary: Retrieve schema metadata for a specific event version
+      description: >-
+        Retrieves schema metadata by providing domain, event, and version in the request body.
+        The schema is looked up from DynamoDB (or cache if available) and returned.
+      operationId: fetchSchema
+      tags:
+        - webhook-schema-api
+
+      requestBody:
+        $ref: './components/requests.yaml#/EventPublisherRequest'
+      responses:
+        '200':
+          $ref: './components/responses.yaml#/EventSchemaResponse'
+        '500':
+          $ref: './common-libraries/components/responses.yaml#/InternalServerError'
+        '404':
+          $ref: './common-libraries/components/responses.yaml#/NotFound'
+        '400':
+          $ref: './common-libraries/components/responses.yaml#/BadRequest'
+        '503':
+          $ref: './common-libraries/components/responses.yaml#/ServiceUnavailable'

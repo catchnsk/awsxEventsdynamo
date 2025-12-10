@@ -1,0 +1,58 @@
+# Reusable Response Definitions
+# Common response schemas used across multiple endpoints
+
+EventPublisherResponse:
+  description: Activate devices status response.
+  headers:
+    Cache-Control:
+      $ref: '../common-libraries/components/headers.yaml#/Cache-Control'
+  content:
+    application/json:
+      schema:
+        $ref: './content-models.yaml#/EventPublisherResponseData'
+      examples:
+        success-response:
+          $ref: '../examples/EventResponse.json'
+
+EventPublisherCEResponse:
+  description: Activate devices status response.
+  headers:
+    Cache-Control:
+      $ref: '../common-libraries/components/headers.yaml#/Cache-Control'
+  content:
+    application/json:
+      schema:
+        $ref: './content-models.yaml#/EventPublisherCEResponseData'
+      examples:
+        success-response:
+          $ref: '../examples/EventResponse.json'
+
+
+CacheEvictResponse:
+  description: Activate devices status response.
+  headers:
+    Cache-Control:
+      $ref: '../common-libraries/components/headers.yaml#/Cache-Control'
+  content:
+    application/json:
+      schema:
+        $ref: './content-models.yaml#/CacheEvictResponseData'
+      examples:
+        success-response:
+          $ref: '../examples/EventResponse.json'
+
+
+
+EventSchemaResponse:
+  description: Activate devices status response.
+  headers:
+    Cache-Control:
+      $ref: '../common-libraries/components/headers.yaml#/Cache-Control'
+  content:
+    application/json:
+      schema:
+        $ref: './content-models.yaml#/EventSchemaResponseData'
+      examples:
+        success-response:
+          $ref: '../examples/EventResponse.json'
+

@@ -14,6 +14,173 @@
     <name>Event Validation API Service</name>
     <description>Spring Boot WebFlux service that validates webhook events and publishes to MSK</description>
 
+    <build>
+        <plugins>
+            <!-- Unpack OpenAPI spec from oas-spec module -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.11.0</version>
+                <configuration>
+                    <parameters>true</parameters>
+                    <source>21</source>
+                    <target>21</target>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <configuration>
+                    <jvmArguments>
+                        -Xdebug -Xrunidwp: transport=dt_socket, server-y, suspend=n, address=5299
+                    </jvmArguments>
+                    <addResources>false</addResources>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <artifactId>maven-resources-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>copy-resources</id>
+                        <phase>process-resources</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+
+
+                        <configuration>
+                            <outputDirectory>${project.build.directory}/selectors</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>src/main/selectors</directory>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+
+            <!-- OpenAPI Generator Plugin -->
+            <plugin>
+                <groupId>org.openapitools</groupId>
+                <artifactId>openapi-generator-maven-plugin</artifactId>
+                <version>4.3.1</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                        <configuration>
+                            <!-- Path to OpenAPI spec in resources -->
+                            <inputSpec>${project.basedir}/src/main/resources/oas/openapi.yaml</inputSpec>
+
+
+                            <!-- Generator to use -->
+                            <generatorName>spring</generatorName>
+
+                            <!-- Output directory -->
+                            <output>${project.basedir}/../oasgen</output>
+
+
+                            <!-- API package -->
+                            <apiPackage>${project.groupId}.api</apiPackage>
+
+                            <!-- Model package -->
+                            <modelPackage>${project.groupId}.model</modelPackage>
+
+                            <!-- Generate only models and API interfaces -->
+                            <generateSupportingFiles>false</generateSupportingFiles>
+
+                          <!--  <generateApis>true</generateApis>
+                            <generateModels>true</generateModels>
+
+                            <generateApiTests>false</generateApiTests>
+                            <generateModelTests>false</generateModelTests>
+                            <generateApiDocumentation>false</generateApiDocumentation>
+                            <generateModelDocumentation>false</generateModelDocumentation>-->
+
+                            <!-- Skip spec validation -->
+
+                            <!-- Configuration options -->
+                            <configOptions>
+                                <sourceFolder>src/main/java</sourceFolder>
+                                <interfaceOnly>true</interfaceOnly>
+                                <skipDefaultInterface>true</skipDefaultInterface>
+                                <performBeanValidation> false</performBeanValidation>
+                                <useBeanValidation>false</useBeanValidation>
+                                <dateLibrary>java8</dateLibrary>
+                                <Library>spring-boot</Library>
+                                <async>false</async>
+                                <reactive>true</reactive>
+                                <hideGenerationTimestamp>true</hideGenerationTimestamp>
+                                <validateSpec>false</validateSpec>
+
+                                <!--<reactive>true</reactive>
+                                <interfaceOnly>true</interfaceOnly>
+                                <skipDefaultInterface>true</skipDefaultInterface>
+                                <useBeanValidation>true</useBeanValidation>
+                                <performBeanValidation>false</performBeanValidation>
+                                <useOptional>false</useOptional>
+                                <useTags>true</useTags>
+                                <delegatePattern>false</delegatePattern>
+                                <serializableModel>true</serializableModel>
+                                <openApiNullable>false</openApiNullable>
+                                  <dateLibrary>java8</dateLibrary>-->
+                                <additionalModelTypeAnnotations>
+                                    @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
+                                </additionalModelTypeAnnotations>
+
+
+                            </configOptions>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- Add generated sources to compilation -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <!--<version>3.4.0</version>-->
+                <executions>
+                    <execution>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>add-source</goal>
+                        </goals>
+                        <configuration>
+                            <sources>
+                                <source>target/generated-sources/annotations</source>
+                            </sources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>create-distribution</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                        <configuration>
+                            <skipAssembly>false</skipAssembly>
+                            <descriptors>
+                                <descriptor>src/main/resources/assembly/oas-assembly.xml</descriptor>
+                            </descriptors>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
     <dependencies>
         <!-- Generated API Models -->
         <dependency>
@@ -103,12 +270,14 @@
         </dependency>
     </dependencies>
 
-    <build>
+    <!--<build>
         <plugins>
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
             </plugin>
         </plugins>
-    </build>
+    </build>-->
+
+
 </project>

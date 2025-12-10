@@ -1,0 +1,66 @@
+# Request Body Definitions
+# Reusable request body schemas
+
+EventPublishRequest:
+  description: Event Payload with domain, eventName, version, and data
+  content:
+    application/json:
+      schema:
+        $ref: './content-models.yaml#/EventPublishRequestData'
+      examples:
+        success-request:
+          $ref: '../examples/EventPublishRequest.json'
+
+EventPublishCERequest:
+  description: CloudEvents format event Payload
+  content:
+    application/json:
+      schema:
+        $ref: './content-models.yaml#/EventPublishCERequestData'
+      examples:
+        success-request:
+          $ref: '../examples/EventPublishRequest.json'
+
+EventPublisherRequest:
+  description: Event Payload with domain, eventName, version, and data
+  content:
+    application/json:
+      schema:
+        $ref: './content-models.yaml#/EventPublisherRequestData'
+      examples:
+        success-request:
+          $ref: '../examples/EventPublishRequest.json'
+
+SchemaLookupRequest:
+  description: Schema lookup request with domain, event, and version
+  content:
+    application/json:
+      schema:
+        $ref: './content-models.yaml#/SchemaLookupRequestData'
+      examples:
+        success-request:
+          $ref: '../examples/EventPublishRequest.json'
+
+EventPayloadRequestBody:
+  required: true
+  description: Event Payload in JSON, XML, or Avro format
+  content:
+    application/json:
+      schema:
+        type: object
+        additionalProperties: true
+    application/xml:
+      schema:
+        type: string
+    application/avro:
+      schema:
+        type: object
+        additionalProperties: true
+
+SchemaLookupRequestBody:
+  required: true
+  description: Schema lookup request with domain, event, and version
+  content:
+    application/json:
+      schema:
+        $ref: '#/components/schemas/SchemaLookupRequest'

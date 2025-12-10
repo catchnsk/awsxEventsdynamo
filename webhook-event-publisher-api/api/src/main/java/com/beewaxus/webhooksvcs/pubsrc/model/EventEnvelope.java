@@ -13,5 +13,5 @@ public record EventEnvelope(
         JsonNode payload,
         Instant timestamp,
         Map<String, String> headers,
-        SchemaFormatType schemaFormatType  // Indicates whether payload is validated with JSON Schema or Avro Schema
+       SchemaFormatType schemaFormatType  // Indicates whether payload is validated with JSON Schema or Avro Schema
 ) {}
