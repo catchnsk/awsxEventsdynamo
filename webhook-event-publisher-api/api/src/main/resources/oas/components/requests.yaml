@@ -63,4 +63,4 @@ SchemaLookupRequestBody:
   content:
     application/json:
       schema:
-        $ref: '#/components/schemas/SchemaLookupRequest'
+        $ref: './content-models.yaml#/SchemaLookupRequestData'
