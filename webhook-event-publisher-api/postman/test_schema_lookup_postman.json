@@ -1,0 +1,51 @@
+{
+  "info": {
+    "name": "POST /webhook/schema/ - Schema Lookup",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Test request for retrieving schema metadata by domain, event, and version"
+  },
+  "item": [
+    {
+      "name": "Get Schema by Domain/Event/Version",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"domain\": \"payments\",\n  \"event\": \"transactionCreated\",\n  \"version\": \"1.0\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/webhook/schema/",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "webhook",
+            "schema",
+            ""
+          ]
+        },
+        "description": "Retrieves schema metadata by providing domain, event, and version in the request body.\n\n**Note:** Field names are case-sensitive. Use lowercase: `domain`, `event`, `version`"
+      },
+      "response": []
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080",
+      "type": "string"
+    }
+  ]
+}
+

@@ -1,0 +1,6 @@
+{
+  "domain": "payments",
+  "event": "transactionCreated",
+  "version": "1.0"
+}
+

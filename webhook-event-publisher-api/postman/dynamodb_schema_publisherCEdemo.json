@@ -1,12 +1,12 @@
 {
   "TableName": "event_schema",
   "Item": {
-    "PK": { "S": "SCHEMA_PAYMENTS_TRANSACTIONCREATED_1_0" },
+    "PK": { "S": "SCHEMA_APPLY_TRANSACTIONCREATED_1_0" },
     "SK": { "S": "v1.0" },
 
-    "EVENT_SCHEMA_ID": { "S": "SCHEMA_PAYMENTS_TRANSACTIONCREATED_1_0" },
-    "PRODUCER_DOMAIN": { "S": "payments" },
-    "EVENT_NAME": { "S": "transactionCreated" },
+    "EVENT_SCHEMA_ID": { "S": "SCHEMA_APPLY_TRANSACTIONCREATED_1_0" },
+    "PRODUCER_DOMAIN": { "S": "Apply" },
+    "EVENT_NAME": { "S": "testEvent" },
     "VERSION": { "S": "1.0" },
     "EVENT_SCHEMA_HEADER": { "S": "Standard event header with ID, domain, version, and timestamp" },
 

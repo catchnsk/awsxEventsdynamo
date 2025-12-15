@@ -37,8 +37,8 @@ public class IdempotencyLedgerService {
                         String timestamp = now.toString();
 
                         Map<String, AttributeValue> item = new HashMap<>();
-                        item.put("EVENT_ID", AttributeValue.builder().s(eventId).build());
-                        item.put("EVENT_STATUS", AttributeValue.builder().s(status.getValue()).build());
+                        item.put("eventId", AttributeValue.builder().s(eventId).build());
+                        item.put("eventStatus", AttributeValue.builder().s(status.getValue()).build());
                         item.put("CREATION_TIMESTAMP", AttributeValue.builder().s(timestamp).build());
                         item.put("UPDATED_TIMESTAMP", AttributeValue.builder().s(timestamp).build());
                         
